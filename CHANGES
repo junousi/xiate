@@ -1,5 +1,11 @@
 Release history for xiate
 
+next
+  [Changed]
+  - Allow customization of cursor attributes: Blinking on/off and shape.
+    This is listed under "Changed", because you have to merge the new
+    config.def.h in order to define two new variables.
+
 v18.05  2018-05-20
   [Changed]
   - The client-server model has been removed. There's only one binary

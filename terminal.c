@@ -366,7 +366,8 @@ term_new(struct Terminal *t, int argc, char **argv)
     gtk_widget_show_all(t->win);
 
     vte_terminal_set_allow_bold(VTE_TERMINAL(t->term), enable_bold);
-    vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(t->term), VTE_CURSOR_BLINK_OFF);
+    vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(t->term), cursor_blink_mode);
+    vte_terminal_set_cursor_shape(VTE_TERMINAL(t->term), cursor_shape);
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(t->term), TRUE);
     vte_terminal_set_scrollback_lines(VTE_TERMINAL(t->term), scrollback_lines);
     vte_terminal_set_allow_hyperlink(VTE_TERMINAL(t->term), TRUE);

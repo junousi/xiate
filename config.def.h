@@ -65,6 +65,26 @@ char *link_handler = "xiate-link-handler";
  * for in your $PATH. */
 char *history_handler = "xiate-history-handler";
 
+/* Whether or not to blink the cursor. Probably one of the following
+ * values, but please check with upstream docs or your header files:
+ *
+ * VTE_CURSOR_BLINK_SYSTEM
+ * VTE_CURSOR_BLINK_ON
+ * VTE_CURSOR_BLINK_OFF
+ *
+ * https://developer.gnome.org/vte/unstable/VteTerminal.html */
+VteCursorBlinkMode cursor_blink_mode = VTE_CURSOR_BLINK_OFF;
+
+/* Shape of the cursor. Probably one of the following values, but please
+ * check with upstream docs or your header files:
+ *
+ * VTE_CURSOR_SHAPE_BLOCK
+ * VTE_CURSOR_SHAPE_IBEAM
+ * VTE_CURSOR_SHAPE_UNDERLINE
+ *
+ * https://developer.gnome.org/vte/unstable/VteTerminal.html */
+VteCursorShape cursor_shape = VTE_CURSOR_SHAPE_BLOCK;
+
 /* Background color of text under the cursor. There's a special mode:
  * "If NULL, text under the cursor will be drawn with foreground and
  * background colors reversed." */
