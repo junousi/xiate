@@ -5,6 +5,8 @@ next
   - Allow customization of cursor attributes: Blinking on/off and shape.
     This is listed under "Changed", because you have to merge the new
     config.def.h in order to define two new variables.
+  - The project has moved away from GitHub, thus changing some links in
+    the documentation.
 
 v18.05  2018-05-20
   [Changed]
