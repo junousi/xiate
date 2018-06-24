@@ -5,6 +5,9 @@ next
   - Allow customization of cursor attributes: Blinking on/off and shape.
     This is listed under "Changed", because you have to merge the new
     config.def.h in order to define two new variables.
+  - The sub directory "man1" has been removed, the manpage now lives in
+    the repo's root directory. This is only relevant to you if you don't
+    use "make install".
   - The project has moved away from GitHub, thus changing some links in
     the documentation.
 
