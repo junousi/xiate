@@ -1,6 +1,6 @@
 Release history for xiate
 
-next
+v18.07  2018-07-08
   [Changed]
   - Allow customization of cursor attributes: Blinking on/off and shape.
     This is listed under "Changed", because you have to merge the new
