@@ -16,34 +16,3 @@ In file included from /usr/include/gtk-3.0/gtk/gtkdialog.h:32,
 /usr/include/gtk-3.0/gtk/gtkwindow.h:154:12: note: declared here
  void       gtk_window_set_wmclass              (GtkWindow           *window,
             ^~~~~~~~~~~~~~~~~~~~~~
-
-
-Issues with macros defined in VTE
-=================================
-
-This must be addressed in VTE itself.
-
-In file included from /usr/lib/glib-2.0/include/glibconfig.h:9,
-                 from /usr/include/glib-2.0/glib/gtypes.h:32,
-                 from /usr/include/glib-2.0/glib/galloca.h:32,
-                 from /usr/include/glib-2.0/glib.h:30,
-                 from /usr/include/gtk-3.0/gdk/gdkconfig.h:13,
-                 from /usr/include/gtk-3.0/gdk/gdk.h:30,
-                 from /usr/include/gtk-3.0/gtk/gtk.h:30,
-                 from terminal.c:1:
-/usr/include/vte-2.91/vte/vteregex.h: In function ‘glib_listautoptr_cleanup_VteRegex’:
-/usr/include/glib-2.0/glib/gmacros.h:462:99: warning: cast between incompatible function types from ‘VteRegex * (*)(VteRegex *)’ {aka ‘struct _VteRegex * (*)(struct _VteRegex *)’} to ‘void (*)(void *)’ [-Wcast-function-type]
- GLIB_AUTOPTR_LIST_FUNC_NAME(TypeName) (GList **_l) { g_list_free_full (*_l, (GDestroyNotify) func); } \
-                                                                             ^
-
-/usr/include/vte-2.91/vte/vteregex.h:71:1: note: in expansion of macro ‘G_DEFINE_AUTOPTR_CLEANUP_FUNC’
- G_DEFINE_AUTOPTR_CLEANUP_FUNC(VteRegex, vte_regex_unref)
- ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/usr/include/vte-2.91/vte/vteregex.h: In function ‘glib_slistautoptr_cleanup_VteRegex’:
-/usr/include/glib-2.0/glib/gmacros.h:463:102: warning: cast between incompatible function types from ‘VteRegex * (*)(VteRegex *)’ {aka ‘struct _VteRegex * (*)(struct _VteRegex *)’} to ‘void (*)(void *)’ [-Wcast-function-type]
- B_AUTOPTR_SLIST_FUNC_NAME(TypeName) (GSList **_l) { g_slist_free_full (*_l, (GDestroyNotify) func); } \
-                                                                             ^
-
-/usr/include/vte-2.91/vte/vteregex.h:71:1: note: in expansion of macro ‘G_DEFINE_AUTOPTR_CLEANUP_FUNC’
- G_DEFINE_AUTOPTR_CLEANUP_FUNC(VteRegex, vte_regex_unref)
- ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
