@@ -8,6 +8,9 @@ gboolean login_shell = TRUE;
  * of this setting. */
 gboolean enable_bold = TRUE;
 
+/* Shall the escape sequence for "bold" also switch to a brighter color? */
+gboolean bold_is_bright = TRUE;
+
 /* Default fonts and font sizes. These strings will be parsed by pango,
  * see the following URL:
  *
