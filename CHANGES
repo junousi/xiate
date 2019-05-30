@@ -1,6 +1,6 @@
 Release history for xiate
 
-next
+v19.05  2019-05-30
   [Added]
   - config.h: Add option "bold_is_bright". VTE's default has changed and
     I want the old behaviour back.
