@@ -1,4 +1,4 @@
-.TH xiate 1 "2018-05-05" "xiate" "User Commands"
+.TH xiate 1 "2019-06-26" "xiate" "User Commands"
 .\" --------------------------------------------------------------------
 .SH NAME
 xiate \- terminal emulator
@@ -10,6 +10,7 @@ xiate \- terminal emulator
 [\fB\-hold\fP]
 [\fB\-name\fP \fIname\fP]
 [\fB\-title\fP \fItitle\fP]
+[\fB\-\-fontindex\fP \fIindex\fP]
 .\" --------------------------------------------------------------------
 .SH DESCRIPTION
 \fBxiate\fP is a terminal emulator. When you run it, a terminal window
@@ -36,6 +37,11 @@ Sets the window's instance name (part of the X property WM_CLASS).
 \fB\-title\fP \fItitle\fP
 Sets the initial window title. Be aware that the title will very likely
 be overwritten by child processes.
+.P
+In addition, the following options are specific to \fBxiate\fP:
+.TP
+\fB\-\-fontindex\fP \fIindex\fP
+Start up with this font. Fonts are defined in \fIconfig.h\fP.
 .\" --------------------------------------------------------------------
 .SH "KEY BINDINGS"
 In windows launched by \fBxiate\fP, you can use the following key

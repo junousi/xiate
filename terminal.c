@@ -320,6 +320,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     static char *args_default[] = { NULL, NULL, NULL };
     char **argv_cmdline = NULL, **args_use;
     char *title = __NAME__, *wm_class = __NAME_CAPITALIZED__, *wm_name = __NAME__;
+    size_t fontindex = 0;
     int i;
     GdkRGBA c_foreground_gdk;
     GdkRGBA c_background_gdk;
@@ -340,6 +341,8 @@ term_new(struct Terminal *t, int argc, char **argv)
             wm_name = argv[++i];
         else if (strcmp(argv[i], "-title") == 0 && i < argc - 1)
             title = argv[++i];
+        else if (strcmp(argv[i], "--fontindex") == 0 && i < argc - 1)
+            fontindex = atoi(argv[++i]);
         else if (strcmp(argv[i], "-e") == 0 && i < argc - 1)
         {
             argv_cmdline = &argv[++i];
@@ -362,7 +365,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     gtk_container_add(GTK_CONTAINER(t->win), t->term);
 
     /* Appearance. */
-    term_set_font(NULL, VTE_TERMINAL(t->term), 0);
+    term_set_font(NULL, VTE_TERMINAL(t->term), fontindex);
     gtk_widget_show_all(t->win);
 
     vte_terminal_set_allow_bold(VTE_TERMINAL(t->term), enable_bold);
