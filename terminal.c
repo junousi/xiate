@@ -250,15 +250,15 @@ sig_key_press(GtkWidget *widget, GdkEvent *event, gpointer data)
                 vte_terminal_set_font_scale(term, 1);
                 return TRUE;
 
-            case GDK_KEY_KP_1: term_set_font(win, term, 0); return TRUE;
-            case GDK_KEY_KP_2: term_set_font(win, term, 1); return TRUE;
-            case GDK_KEY_KP_3: term_set_font(win, term, 2); return TRUE;
-            case GDK_KEY_KP_4: term_set_font(win, term, 3); return TRUE;
-            case GDK_KEY_KP_5: term_set_font(win, term, 4); return TRUE;
-            case GDK_KEY_KP_6: term_set_font(win, term, 5); return TRUE;
-            case GDK_KEY_KP_7: term_set_font(win, term, 6); return TRUE;
-            case GDK_KEY_KP_8: term_set_font(win, term, 7); return TRUE;
-            case GDK_KEY_KP_9: term_set_font(win, term, 8); return TRUE;
+            case GDK_KEY_KP_1: term_set_font(win, term, 1); return TRUE;
+            case GDK_KEY_KP_2: term_set_font(win, term, 2); return TRUE;
+            case GDK_KEY_KP_3: term_set_font(win, term, 3); return TRUE;
+            case GDK_KEY_KP_4: term_set_font(win, term, 4); return TRUE;
+            case GDK_KEY_KP_5: term_set_font(win, term, 5); return TRUE;
+            case GDK_KEY_KP_6: term_set_font(win, term, 6); return TRUE;
+            case GDK_KEY_KP_7: term_set_font(win, term, 7); return TRUE;
+            case GDK_KEY_KP_8: term_set_font(win, term, 8); return TRUE;
+            case GDK_KEY_KP_9: term_set_font(win, term, 9); return TRUE;
         }
     }
 
@@ -320,7 +320,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     static char *args_default[] = { NULL, NULL, NULL };
     char **argv_cmdline = NULL, **args_use;
     char *title = __NAME__, *wm_class = __NAME_CAPITALIZED__, *wm_name = __NAME__;
-    size_t fontindex = 0;
+    size_t fontindex = 1;
     int i;
     GdkRGBA c_foreground_gdk;
     GdkRGBA c_background_gdk;
@@ -466,6 +466,9 @@ term_set_font(GtkWidget *win, VteTerminal *term, size_t index)
 {
     PangoFontDescription *font_desc = NULL;
     glong width, height;
+
+    /* Input values start at 1. */
+    index--;
 
     if (index >= sizeof fonts / sizeof fonts[0])
     {

@@ -18,8 +18,8 @@ gboolean bold_is_bright = TRUE;
  *
  * You can define up to 9 fonts, at least one font must be defined. You
  * can switch between these fonts during runtime using Ctrl+Keypad$n.
- * The first font will be index 0 and can be activated using
- * Ctrl+Keypad1. Second one with Ctrl+Keypad2 and so on.
+ * The first font (C array index 0) will be fontindex 1 and can be
+ * activated using Ctrl+Keypad1. Second one with Ctrl+Keypad2 and so on.
  */
 char *fonts[] = {
     "qsqs,Ttyp0 10",
