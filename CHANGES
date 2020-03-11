@@ -1,5 +1,11 @@
 Release history for xiate
 
+next
+  [Changed]
+  - config.h: "enable_bold" has been removed. VTE's function
+    "vte_terminal_set_allow_bold()" is deprecated now and will probably
+    be removed soon: https://bugzilla.gnome.org/show_bug.cgi?id=762247#c36
+
 v19.11  2019-11-02
   [Added]
   - Command line option to choose initial font.

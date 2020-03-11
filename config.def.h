@@ -3,11 +3,6 @@
  * option specifies whether the shell will be a login shell or not. */
 gboolean login_shell = TRUE;
 
-/* Whether or not to enable the usage of bold fonts. See also c_bold,
- * which is always used for bold text with the default color, regardless
- * of this setting. */
-gboolean enable_bold = TRUE;
-
 /* Shall the escape sequence for "bold" also switch to a brighter color? */
 gboolean bold_is_bright = TRUE;
 

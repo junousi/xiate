@@ -368,7 +368,6 @@ term_new(struct Terminal *t, int argc, char **argv)
     term_set_font(NULL, VTE_TERMINAL(t->term), fontindex);
     gtk_widget_show_all(t->win);
 
-    vte_terminal_set_allow_bold(VTE_TERMINAL(t->term), enable_bold);
     vte_terminal_set_bold_is_bright(VTE_TERMINAL(t->term), bold_is_bright);
     vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(t->term), cursor_blink_mode);
     vte_terminal_set_cursor_shape(VTE_TERMINAL(t->term), cursor_shape);
