@@ -3,8 +3,29 @@
  * option specifies whether the shell will be a login shell or not. */
 gboolean login_shell = TRUE;
 
-/* Shall the escape sequence for "bold" also switch to a brighter color? */
-gboolean bold_is_bright = TRUE;
+/* Shall the escape sequence for "bold" also switch to a brighter color?
+ *
+ * Historically, X11 terminal emulators interpreted "bold" as "bold font
+ * AND brighter color". Many programs ask the ncurses API for "A_BOLD,
+ * COLOR_YELLOW" and expect to get bold, bright yellow. On the other
+ * hand, there are documents that define this as "bold OR bright", such
+ * as ECMA-48.
+ *
+ * There is currently (2020-ish) a movement to drop the old behaviour
+ * and only have "bold" make text bold, not bright. The main goal is to
+ * remove the ambiguity. Since GNOME is pushing this change, it can be
+ * expected to see wider adoption in the next few years.
+ *
+ * More background information on this topic:
+ *
+ * - The main ticket for VTE's change (note comment 36, a support matrix):
+ *   https://bugzilla.gnome.org/show_bug.cgi?id=762247
+ * - How to deal with it in ncurses applications:
+ *   https://bugzilla.redhat.com/show_bug.cgi?id=1687141#c3
+ * - More links:
+ *   https://github.com/alacritty/alacritty/issues/2779#issuecomment-528782774
+ */
+gboolean bold_is_bright = FALSE;
 
 /* Default fonts and font sizes. These strings will be parsed by pango,
  * see the following URL:

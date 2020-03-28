@@ -5,6 +5,10 @@ next
   - config.h: "enable_bold" has been removed. VTE's function
     "vte_terminal_set_allow_bold()" is deprecated now and will probably
     be removed soon: https://bugzilla.gnome.org/show_bug.cgi?id=762247#c36
+  - config.h: We default to "bold_is_bright = FALSE" now, but you can
+    still return to the old behaviour as long as this switch remains
+    available in VTE (but you should expect it to vanish in a few
+    years).
 
 v19.11  2019-11-02
   [Added]
