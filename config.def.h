@@ -116,7 +116,7 @@ char *c_cursor_foreground = "#000000";
 /* Quoting from the VTE reference: "Sets the color used to draw bold
  * text in the default foreground color. If [...] NULL then the default
  * color is used." */
-char *c_bold = "#FFFFFF";
+char *c_bold = NULL;
 
 /* Set the terminal's color palette. Note that none of these values can
  * be NULL. */

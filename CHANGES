@@ -1,5 +1,10 @@
 Release history for xiate
 
+next
+  [Changed]
+  - config.h: "c_bold" now defaults to NULL which harmonizes better with
+    "bold_is_bright = FALSE".
+
 v20.03  2020-03-28
   [Changed]
   - config.h: "enable_bold" has been removed. VTE's function
