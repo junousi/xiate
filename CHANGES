@@ -1,6 +1,6 @@
 Release history for xiate
 
-next
+v20.03  2020-03-28
   [Changed]
   - config.h: "enable_bold" has been removed. VTE's function
     "vte_terminal_set_allow_bold()" is deprecated now and will probably
