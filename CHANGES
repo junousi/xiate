@@ -4,6 +4,7 @@ next
   [Changed]
   - config.h: "c_bold" now defaults to NULL which harmonizes better with
     "bold_is_bright = FALSE".
+  - config.h: Default to a generic "Monospace" instead of "qsqs".
 
 v20.03  2020-03-28
   [Changed]

@@ -38,9 +38,8 @@ gboolean bold_is_bright = FALSE;
  * activated using Ctrl+Keypad1. Second one with Ctrl+Keypad2 and so on.
  */
 char *fonts[] = {
-    "qsqs,Ttyp0 10",
-    "VGA 12",
-    "Terminus 12",
+    "Monospace 9",
+    "Terminus 10",
 };
 
 /* Use 0 to disable scrolling completely or a negative value for
