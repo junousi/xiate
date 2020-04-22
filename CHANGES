@@ -1,6 +1,6 @@
 Release history for xiate
 
-next
+v20.04  2020-04-22
   [Changed]
   - config.h: "c_bold" now defaults to NULL which harmonizes better with
     "bold_is_bright = FALSE".
