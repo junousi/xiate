@@ -26,23 +26,23 @@ struct Terminal
 };
 
 
-static void cb_spawn_async(VteTerminal *, GPid, GError *, gpointer);
-static void handle_history(VteTerminal *);
-static char *safe_emsg(GError *);
-static void sig_bell(VteTerminal *, gpointer);
-static gboolean sig_button_press(GtkWidget *, GdkEvent *, gpointer);
-static void sig_child_exited(VteTerminal *, gint, gpointer);
-static void sig_decrease_font_size(VteTerminal *, gpointer);
-static void sig_increase_font_size(VteTerminal *, gpointer);
-static void sig_hyperlink_changed(VteTerminal *, gchar *, GdkRectangle *, gpointer);
-static gboolean sig_key_press(GtkWidget *, GdkEvent *, gpointer);
-static void sig_window_destroy(GtkWidget *, gpointer);
-static void sig_window_resize(VteTerminal *, guint, guint, gpointer);
-static void sig_window_title_changed(VteTerminal *, gpointer);
-static void term_new(struct Terminal *, int, char **);
-static void term_set_font(GtkWidget *, VteTerminal *, size_t);
-static void term_set_font_scale(GtkWidget *, VteTerminal *, gdouble);
-static void term_set_size(GtkWidget *, VteTerminal *, glong, glong);
+void cb_spawn_async(VteTerminal *, GPid, GError *, gpointer);
+void handle_history(VteTerminal *);
+char *safe_emsg(GError *);
+void sig_bell(VteTerminal *, gpointer);
+gboolean sig_button_press(GtkWidget *, GdkEvent *, gpointer);
+void sig_child_exited(VteTerminal *, gint, gpointer);
+void sig_decrease_font_size(VteTerminal *, gpointer);
+void sig_increase_font_size(VteTerminal *, gpointer);
+void sig_hyperlink_changed(VteTerminal *, gchar *, GdkRectangle *, gpointer);
+gboolean sig_key_press(GtkWidget *, GdkEvent *, gpointer);
+void sig_window_destroy(GtkWidget *, gpointer);
+void sig_window_resize(VteTerminal *, guint, guint, gpointer);
+void sig_window_title_changed(VteTerminal *, gpointer);
+void term_new(struct Terminal *, int, char **);
+void term_set_font(GtkWidget *, VteTerminal *, size_t);
+void term_set_font_scale(GtkWidget *, VteTerminal *, gdouble);
+void term_set_size(GtkWidget *, VteTerminal *, glong, glong);
 
 
 void
