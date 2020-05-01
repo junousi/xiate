@@ -212,14 +212,14 @@ sig_key_press(GtkWidget *widget, GdkEvent *event, gpointer data)
     {
         switch (((GdkEventKey *)event)->keyval)
         {
-            case GDK_KEY_F:
-                handle_history(term);
-                return TRUE;
             case GDK_KEY_C:
                 vte_terminal_copy_clipboard_format(term, VTE_FORMAT_TEXT);
                 return TRUE;
             case GDK_KEY_V:
                 vte_terminal_paste_clipboard(term);
+                return TRUE;
+            case GDK_KEY_H:
+                handle_history(term);
                 return TRUE;
             case GDK_KEY_N:
                 t->current_font++;

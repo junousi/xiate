@@ -6,6 +6,8 @@ next
     on you having a keypad. This also changes how fonts are addressed
     with "--fontindex": Indexes now start at 0. You can now specify an
     arbitrary number of fonts (but at least one).
+  - The hotkey for launching the history handler has been changed from
+    "Ctrl + Shift + F" to "Ctrl + Shift + H" to be more mnemonic.
 
 v20.04  2020-04-22
   [Changed]
