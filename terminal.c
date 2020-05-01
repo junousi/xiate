@@ -226,14 +226,14 @@ sig_key_press(GtkWidget *widget, GdkEvent *event, gpointer data)
                 t->current_font %= sizeof fonts / sizeof fonts[0];
                 term_activate_current_font(t, TRUE);
                 return TRUE;
-            case GDK_KEY_R:
-                term_change_font_scale(t, 0);
+            case GDK_KEY_I:
+                term_change_font_scale(t, 1);
                 return TRUE;
             case GDK_KEY_O:
                 term_change_font_scale(t, -1);
                 return TRUE;
-            case GDK_KEY_I:
-                term_change_font_scale(t, 1);
+            case GDK_KEY_R:
+                term_change_font_scale(t, 0);
                 return TRUE;
         }
     }
