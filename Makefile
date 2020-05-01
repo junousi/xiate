@@ -1,6 +1,5 @@
 CFLAGS += -std=c99 -Wall -Wextra -O3
 __NAME__ = xiate
-__NAME_UPPERCASE__ = `echo $(__NAME__) | sed 's/.*/\U&/'`
 __NAME_CAPITALIZED__ = `echo $(__NAME__) | sed 's/^./\U&\E/'`
 
 INSTALL = install
@@ -22,7 +21,6 @@ all: $(__NAME__)
 $(__NAME__): terminal.c config.h
 	$(CC) $(CFLAGS) $(LDFLAGS) \
 		-D__NAME__=\"$(__NAME__)\" \
-		-D__NAME_UPPERCASE__=\"$(__NAME_UPPERCASE__)\" \
 		-D__NAME_CAPITALIZED__=\"$(__NAME_CAPITALIZED__)\" \
 		-DSRVR_$$HOSTNAME \
 		-o $@ $< \
