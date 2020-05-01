@@ -35,8 +35,8 @@ void sig_window_destroy(GtkWidget *, gpointer);
 void sig_window_resize(VteTerminal *, guint, guint, gpointer);
 void sig_window_title_changed(VteTerminal *, gpointer);
 void term_new(struct Terminal *, int, char **);
-void term_set_font(struct Terminal *, gboolean);
-void term_set_font_scale(struct Terminal *, gint);
+void term_activate_current_font(struct Terminal *, gboolean);
+void term_change_font_scale(struct Terminal *, gint);
 void term_set_size(struct Terminal *t, glong, glong, gboolean);
 
 
@@ -224,16 +224,16 @@ sig_key_press(GtkWidget *widget, GdkEvent *event, gpointer data)
             case GDK_KEY_N:
                 t->current_font++;
                 t->current_font %= sizeof fonts / sizeof fonts[0];
-                term_set_font(t, TRUE);
+                term_activate_current_font(t, TRUE);
                 return TRUE;
             case GDK_KEY_R:
-                term_set_font_scale(t, 0);
+                term_change_font_scale(t, 0);
                 return TRUE;
             case GDK_KEY_O:
-                term_set_font_scale(t, -1);
+                term_change_font_scale(t, -1);
                 return TRUE;
             case GDK_KEY_I:
-                term_set_font_scale(t, 1);
+                term_change_font_scale(t, 1);
                 return TRUE;
         }
     }
@@ -343,7 +343,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     gtk_container_add(GTK_CONTAINER(t->win), t->term);
 
     /* Appearance. */
-    term_set_font(t, FALSE);
+    term_activate_current_font(t, FALSE);
     gtk_widget_show_all(t->win);
 
     vte_terminal_set_bold_is_bright(VTE_TERMINAL(t->term), bold_is_bright);
@@ -435,7 +435,7 @@ term_new(struct Terminal *t, int argc, char **argv)
 }
 
 void
-term_set_font(struct Terminal *t, gboolean win_ready)
+term_activate_current_font(struct Terminal *t, gboolean win_ready)
 {
     PangoFontDescription *font_desc = NULL;
     glong width, height;
@@ -458,7 +458,7 @@ term_set_font(struct Terminal *t, gboolean win_ready)
 }
 
 void
-term_set_font_scale(struct Terminal *t, gint direction)
+term_change_font_scale(struct Terminal *t, gint direction)
 {
     gdouble s;
     glong width, height;
