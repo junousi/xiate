@@ -42,26 +42,25 @@ In addition, the following options are specific to \fBxiate\fP:
 .TP
 \fB\-\-fontindex\fP \fIindex\fP
 Start up with this font. Fonts are defined in \fIconfig.h\fP.
-\fIindex\fP ranges from 1 to 9 (to match the semantics of the hotkeys,
-see below).
+\fIindex\fP starts at 0.
 .\" --------------------------------------------------------------------
 .SH "KEY BINDINGS"
 In windows launched by \fBxiate\fP, you can use the following key
 bindings.
 .P
 .TP
-\fBCtrl + Keypad_Plus\fP
-Increase font size.
+\fBCtrl + Shift + I\fP
+Zoom in, i.e. increase font size.
 .TP
-\fBCtrl + Keypad_Minus\fP
-Decrease font size.
+\fBCtrl + Shift + O\fP
+Zoom out, i.e. decrease font size.
 .TP
-\fBCtrl + Keypad_0\fP
+\fBCtrl + Shift + R\fP
 Reset font size.
 .TP
-\fBCtrl + Keypad_\fP\fIn\fP
-Switch to another font, where \fIn\fP is 1 through 9. Fonts are defined
-in \fIconfig.h\fP. This also resets the font size.
+\fBCtrl + Shift + N\fP
+Switch to next configured font. Wraps around to first font at the end.
+Fonts are defined in \fIconfig.h\fP. This also resets the font size.
 .TP
 \fBCtrl + Shift + F\fP
 Dumps the terminal history to a file and calls a tool you specified in

@@ -32,10 +32,9 @@ gboolean bold_is_bright = FALSE;
  *
  * https://developer.gnome.org/pango/stable/pango-Fonts.html#pango-font-description-from-string
  *
- * You can define up to 9 fonts, at least one font must be defined. You
- * can switch between these fonts during runtime using Ctrl+Keypad$n.
- * The first font (C array index 0) will be fontindex 1 and can be
- * activated using Ctrl+Keypad1. Second one with Ctrl+Keypad2 and so on.
+ * You can define multiple fonts, at least one font must be defined. You
+ * can switch between these fonts during runtime or you can select one
+ * at startup (by default, the first one will be used). See manpage.
  */
 char *fonts[] = {
     "Monospace 9",

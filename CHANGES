@@ -1,5 +1,12 @@
 Release history for xiate
 
+next
+  [Changed]
+  - Hotkeys for changing fonts have been revised. They no longer depend
+    on you having a keypad. This also changes how fonts are addressed
+    with "--fontindex": Indexes now start at 0. You can now specify an
+    arbitrary number of fonts (but at least one).
+
 v20.04  2020-04-22
   [Changed]
   - config.h: "c_bold" now defaults to NULL which harmonizes better with

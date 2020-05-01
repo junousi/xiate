@@ -19,6 +19,7 @@ struct Terminal
     GtkWidget *win;
     gboolean has_child_exit_status;
     gint child_exit_status;
+    size_t current_font;
 };
 
 
@@ -28,16 +29,15 @@ char *safe_emsg(GError *);
 void sig_bell(VteTerminal *, gpointer);
 gboolean sig_button_press(GtkWidget *, GdkEvent *, gpointer);
 void sig_child_exited(VteTerminal *, gint, gpointer);
-void sig_decrease_font_size(VteTerminal *, gpointer);
-void sig_increase_font_size(VteTerminal *, gpointer);
 void sig_hyperlink_changed(VteTerminal *, gchar *, GdkRectangle *, gpointer);
 gboolean sig_key_press(GtkWidget *, GdkEvent *, gpointer);
 void sig_window_destroy(GtkWidget *, gpointer);
 void sig_window_resize(VteTerminal *, guint, guint, gpointer);
 void sig_window_title_changed(VteTerminal *, gpointer);
+void term_cycle_font(struct Terminal *);
 void term_new(struct Terminal *, int, char **);
 void term_set_font(GtkWidget *, VteTerminal *, size_t);
-void term_set_font_scale(GtkWidget *, VteTerminal *, gdouble);
+void term_set_font_scale(GtkWidget *, VteTerminal *, gint);
 void term_set_size(GtkWidget *, VteTerminal *, glong, glong);
 
 
@@ -191,18 +191,6 @@ sig_child_exited(VteTerminal *term, gint status, gpointer data)
 }
 
 void
-sig_decrease_font_size(VteTerminal *term, gpointer data)
-{
-    term_set_font_scale((GtkWidget *)data, term, 1.0 / 1.1);
-}
-
-void
-sig_increase_font_size(VteTerminal *term, gpointer data)
-{
-    term_set_font_scale((GtkWidget *)data, term, 1.1);
-}
-
-void
 sig_hyperlink_changed(VteTerminal *term, gchar *uri, GdkRectangle *bbox,
                       gpointer data)
 {
@@ -219,7 +207,7 @@ gboolean
 sig_key_press(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
     VteTerminal *term = VTE_TERMINAL(widget);
-    GtkWidget *win = (GtkWidget *)data;
+    struct Terminal *t = (struct Terminal *)data;
 
     if (((GdkEventKey *)event)->state & GDK_CONTROL_MASK)
     {
@@ -234,19 +222,18 @@ sig_key_press(GtkWidget *widget, GdkEvent *event, gpointer data)
             case GDK_KEY_V:
                 vte_terminal_paste_clipboard(term);
                 return TRUE;
-            case GDK_KEY_KP_0:
-                vte_terminal_set_font_scale(term, 1);
+            case GDK_KEY_N:
+                term_cycle_font(t);
                 return TRUE;
-
-            case GDK_KEY_KP_1: term_set_font(win, term, 1); return TRUE;
-            case GDK_KEY_KP_2: term_set_font(win, term, 2); return TRUE;
-            case GDK_KEY_KP_3: term_set_font(win, term, 3); return TRUE;
-            case GDK_KEY_KP_4: term_set_font(win, term, 4); return TRUE;
-            case GDK_KEY_KP_5: term_set_font(win, term, 5); return TRUE;
-            case GDK_KEY_KP_6: term_set_font(win, term, 6); return TRUE;
-            case GDK_KEY_KP_7: term_set_font(win, term, 7); return TRUE;
-            case GDK_KEY_KP_8: term_set_font(win, term, 8); return TRUE;
-            case GDK_KEY_KP_9: term_set_font(win, term, 9); return TRUE;
+            case GDK_KEY_R:
+                term_set_font_scale(t->win, term, 0);
+                return TRUE;
+            case GDK_KEY_O:
+                term_set_font_scale(t->win, term, -1);
+                return TRUE;
+            case GDK_KEY_I:
+                term_set_font_scale(t->win, term, 1);
+                return TRUE;
         }
     }
 
@@ -303,12 +290,19 @@ sig_window_title_changed(VteTerminal *term, gpointer data)
 }
 
 void
+term_cycle_font(struct Terminal *t)
+{
+    t->current_font++;
+    t->current_font %= sizeof fonts / sizeof fonts[0];
+    term_set_font(t->win, VTE_TERMINAL(t->term), t->current_font);
+}
+
+void
 term_new(struct Terminal *t, int argc, char **argv)
 {
     static char *args_default[] = { NULL, NULL, NULL };
     char **argv_cmdline = NULL, **args_use;
     char *title = __NAME__, *wm_class = __NAME_CAPITALIZED__, *wm_name = __NAME__;
-    size_t fontindex = 1;
     int i;
     GdkRGBA c_foreground_gdk;
     GdkRGBA c_background_gdk;
@@ -319,6 +313,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     GSpawnFlags spawn_flags;
 
     /* Handle arguments. */
+    t->current_font = 0;
     for (i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-class") == 0 && i < argc - 1)
@@ -330,7 +325,7 @@ term_new(struct Terminal *t, int argc, char **argv)
         else if (strcmp(argv[i], "-title") == 0 && i < argc - 1)
             title = argv[++i];
         else if (strcmp(argv[i], "--fontindex") == 0 && i < argc - 1)
-            fontindex = atoi(argv[++i]);
+            t->current_font = atoi(argv[++i]);
         else if (strcmp(argv[i], "-e") == 0 && i < argc - 1)
         {
             argv_cmdline = &argv[++i];
@@ -353,7 +348,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     gtk_container_add(GTK_CONTAINER(t->win), t->term);
 
     /* Appearance. */
-    term_set_font(NULL, VTE_TERMINAL(t->term), fontindex);
+    term_set_font(NULL, VTE_TERMINAL(t->term), t->current_font);
     gtk_widget_show_all(t->win);
 
     vte_terminal_set_bold_is_bright(VTE_TERMINAL(t->term), bold_is_bright);
@@ -408,14 +403,10 @@ term_new(struct Terminal *t, int argc, char **argv)
                      G_CALLBACK(sig_button_press), NULL);
     g_signal_connect(G_OBJECT(t->term), "child-exited",
                      G_CALLBACK(sig_child_exited), t);
-    g_signal_connect(G_OBJECT(t->term), "decrease-font-size",
-                     G_CALLBACK(sig_decrease_font_size), t->win);
     g_signal_connect(G_OBJECT(t->term), "hyperlink-hover-uri-changed",
                      G_CALLBACK(sig_hyperlink_changed), NULL);
-    g_signal_connect(G_OBJECT(t->term), "increase-font-size",
-                     G_CALLBACK(sig_increase_font_size), t->win);
     g_signal_connect(G_OBJECT(t->term), "key-press-event",
-                     G_CALLBACK(sig_key_press), t->win);
+                     G_CALLBACK(sig_key_press), t);
     g_signal_connect(G_OBJECT(t->term), "resize-window",
                      G_CALLBACK(sig_window_resize), t->win);
     g_signal_connect(G_OBJECT(t->term), "window-title-changed",
@@ -454,9 +445,6 @@ term_set_font(GtkWidget *win, VteTerminal *term, size_t index)
     PangoFontDescription *font_desc = NULL;
     glong width, height;
 
-    /* Input values start at 1. */
-    index--;
-
     if (index >= sizeof fonts / sizeof fonts[0])
     {
         fprintf(stderr, __NAME__": Warning: Invalid font index\n");
@@ -475,7 +463,7 @@ term_set_font(GtkWidget *win, VteTerminal *term, size_t index)
 }
 
 void
-term_set_font_scale(GtkWidget *win, VteTerminal *term, gdouble mult)
+term_set_font_scale(GtkWidget *win, VteTerminal *term, gint direction)
 {
     gdouble s;
     glong width, height;
@@ -483,8 +471,13 @@ term_set_font_scale(GtkWidget *win, VteTerminal *term, gdouble mult)
     width = vte_terminal_get_column_count(term);
     height = vte_terminal_get_row_count(term);
 
-    s = vte_terminal_get_font_scale(term);
-    s *= mult;
+    if (direction != 0)
+    {
+        s = vte_terminal_get_font_scale(term);
+        s *= direction > 0 ? 1.1 : 1.0 / 1.1;
+    }
+    else
+        s = 1;
     vte_terminal_set_font_scale(term, s);
     term_set_size(win, term, width, height);
 }
@@ -501,7 +494,7 @@ term_set_size(GtkWidget *win, VteTerminal *term, glong width, glong height)
     {
         vte_terminal_set_size(term, width, height);
 
-        /* win might be NULL when called from term_set_font(). */
+        /* win might be NULL when called during early initialization. */
         if (win != NULL)
         {
             gtk_widget_get_preferred_size(GTK_WIDGET(term), NULL, &natural);
