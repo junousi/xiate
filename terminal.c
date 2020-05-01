@@ -43,14 +43,14 @@ void term_set_size(struct Terminal *t, glong, glong, gboolean);
 void
 cb_spawn_async(VteTerminal *term, GPid pid, GError *err, gpointer data)
 {
-    GtkWidget *win = (GtkWidget *)data;
+    struct Terminal *t = (struct Terminal *)data;
 
     (void)term;
 
     if (pid == -1 && err != NULL)
     {
         fprintf(stderr, __NAME__": Spawning child failed: %s\n", err->message);
-        gtk_widget_destroy(win);
+        gtk_widget_destroy(t->win);
     }
 }
 
@@ -111,7 +111,7 @@ safe_emsg(GError *err)
 void
 sig_bell(VteTerminal *term, gpointer data)
 {
-    GtkWidget *win = (GtkWidget *)data;
+    struct Terminal *t = (struct Terminal *)data;
 
     (void)term;
 
@@ -120,8 +120,8 @@ sig_bell(VteTerminal *term, gpointer data)
      * manager that a new urgent event happened when the urgent hint is
      * set next time.
      */
-    gtk_window_set_urgency_hint(GTK_WINDOW(win), FALSE);
-    gtk_window_set_urgency_hint(GTK_WINDOW(win), TRUE);
+    gtk_window_set_urgency_hint(GTK_WINDOW(t->win), FALSE);
+    gtk_window_set_urgency_hint(GTK_WINDOW(t->win), TRUE);
 }
 
 gboolean
@@ -279,17 +279,19 @@ sig_window_destroy(GtkWidget *widget, gpointer data)
 void
 sig_window_resize(VteTerminal *term, guint width, guint height, gpointer data)
 {
+    struct Terminal *t = (struct Terminal *)data;
+
     (void)term;
 
-    term_set_size((struct Terminal *)data, width, height, TRUE);
+    term_set_size(t, width, height, TRUE);
 }
 
 void
 sig_window_title_changed(VteTerminal *term, gpointer data)
 {
-    GtkWidget *win = (GtkWidget *)data;
+    struct Terminal *t = (struct Terminal *)data;
 
-    gtk_window_set_title(GTK_WINDOW(win), vte_terminal_get_window_title(term));
+    gtk_window_set_title(GTK_WINDOW(t->win), vte_terminal_get_window_title(term));
 }
 
 void
@@ -393,19 +395,19 @@ term_new(struct Terminal *t, int argc, char **argv)
 
     /* Signals. */
     g_signal_connect(G_OBJECT(t->term), "bell",
-                     G_CALLBACK(sig_bell), t->win);
+                     G_CALLBACK(sig_bell), t);
     g_signal_connect(G_OBJECT(t->term), "button-press-event",
-                     G_CALLBACK(sig_button_press), NULL);
+                     G_CALLBACK(sig_button_press), t);
     g_signal_connect(G_OBJECT(t->term), "child-exited",
                      G_CALLBACK(sig_child_exited), t);
     g_signal_connect(G_OBJECT(t->term), "hyperlink-hover-uri-changed",
-                     G_CALLBACK(sig_hyperlink_changed), NULL);
+                     G_CALLBACK(sig_hyperlink_changed), t);
     g_signal_connect(G_OBJECT(t->term), "key-press-event",
                      G_CALLBACK(sig_key_press), t);
     g_signal_connect(G_OBJECT(t->term), "resize-window",
                      G_CALLBACK(sig_window_resize), t);
     g_signal_connect(G_OBJECT(t->term), "window-title-changed",
-                     G_CALLBACK(sig_window_title_changed), t->win);
+                     G_CALLBACK(sig_window_title_changed), t);
 
     /* Spawn child. */
     if (argv_cmdline != NULL)
@@ -431,7 +433,7 @@ term_new(struct Terminal *t, int argc, char **argv)
 
     vte_terminal_spawn_async(VTE_TERMINAL(t->term), VTE_PTY_DEFAULT, NULL,
                              args_use, NULL, spawn_flags, NULL, NULL, NULL, 60,
-                             NULL, cb_spawn_async, t->win);
+                             NULL, cb_spawn_async, t);
 }
 
 void
