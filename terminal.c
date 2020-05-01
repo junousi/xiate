@@ -34,11 +34,10 @@ gboolean sig_key_press(GtkWidget *, GdkEvent *, gpointer);
 void sig_window_destroy(GtkWidget *, gpointer);
 void sig_window_resize(VteTerminal *, guint, guint, gpointer);
 void sig_window_title_changed(VteTerminal *, gpointer);
-void term_cycle_font(struct Terminal *);
 void term_new(struct Terminal *, int, char **);
-void term_set_font(GtkWidget *, VteTerminal *, size_t);
-void term_set_font_scale(GtkWidget *, VteTerminal *, gint);
-void term_set_size(GtkWidget *, VteTerminal *, glong, glong);
+void term_set_font(struct Terminal *, gboolean);
+void term_set_font_scale(struct Terminal *, gint);
+void term_set_size(struct Terminal *t, glong, glong, gboolean);
 
 
 void
@@ -223,16 +222,18 @@ sig_key_press(GtkWidget *widget, GdkEvent *event, gpointer data)
                 vte_terminal_paste_clipboard(term);
                 return TRUE;
             case GDK_KEY_N:
-                term_cycle_font(t);
+                t->current_font++;
+                t->current_font %= sizeof fonts / sizeof fonts[0];
+                term_set_font(t, TRUE);
                 return TRUE;
             case GDK_KEY_R:
-                term_set_font_scale(t->win, term, 0);
+                term_set_font_scale(t, 0);
                 return TRUE;
             case GDK_KEY_O:
-                term_set_font_scale(t->win, term, -1);
+                term_set_font_scale(t, -1);
                 return TRUE;
             case GDK_KEY_I:
-                term_set_font_scale(t->win, term, 1);
+                term_set_font_scale(t, 1);
                 return TRUE;
         }
     }
@@ -278,7 +279,9 @@ sig_window_destroy(GtkWidget *widget, gpointer data)
 void
 sig_window_resize(VteTerminal *term, guint width, guint height, gpointer data)
 {
-    term_set_size((GtkWidget *)data, term, width, height);
+    (void)term;
+
+    term_set_size((struct Terminal *)data, width, height, TRUE);
 }
 
 void
@@ -287,14 +290,6 @@ sig_window_title_changed(VteTerminal *term, gpointer data)
     GtkWidget *win = (GtkWidget *)data;
 
     gtk_window_set_title(GTK_WINDOW(win), vte_terminal_get_window_title(term));
-}
-
-void
-term_cycle_font(struct Terminal *t)
-{
-    t->current_font++;
-    t->current_font %= sizeof fonts / sizeof fonts[0];
-    term_set_font(t->win, VTE_TERMINAL(t->term), t->current_font);
 }
 
 void
@@ -348,7 +343,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     gtk_container_add(GTK_CONTAINER(t->win), t->term);
 
     /* Appearance. */
-    term_set_font(NULL, VTE_TERMINAL(t->term), t->current_font);
+    term_set_font(t, FALSE);
     gtk_widget_show_all(t->win);
 
     vte_terminal_set_bold_is_bright(VTE_TERMINAL(t->term), bold_is_bright);
@@ -408,7 +403,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     g_signal_connect(G_OBJECT(t->term), "key-press-event",
                      G_CALLBACK(sig_key_press), t);
     g_signal_connect(G_OBJECT(t->term), "resize-window",
-                     G_CALLBACK(sig_window_resize), t->win);
+                     G_CALLBACK(sig_window_resize), t);
     g_signal_connect(G_OBJECT(t->term), "window-title-changed",
                      G_CALLBACK(sig_window_title_changed), t->win);
 
@@ -440,50 +435,50 @@ term_new(struct Terminal *t, int argc, char **argv)
 }
 
 void
-term_set_font(GtkWidget *win, VteTerminal *term, size_t index)
+term_set_font(struct Terminal *t, gboolean win_ready)
 {
     PangoFontDescription *font_desc = NULL;
     glong width, height;
 
-    if (index >= sizeof fonts / sizeof fonts[0])
+    if (t->current_font >= sizeof fonts / sizeof fonts[0])
     {
         fprintf(stderr, __NAME__": Warning: Invalid font index\n");
         return;
     }
 
-    width = vte_terminal_get_column_count(term);
-    height = vte_terminal_get_row_count(term);
+    width = vte_terminal_get_column_count(VTE_TERMINAL(t->term));
+    height = vte_terminal_get_row_count(VTE_TERMINAL(t->term));
 
-    font_desc = pango_font_description_from_string(fonts[index]);
-    vte_terminal_set_font(term, font_desc);
+    font_desc = pango_font_description_from_string(fonts[t->current_font]);
+    vte_terminal_set_font(VTE_TERMINAL(t->term), font_desc);
     pango_font_description_free(font_desc);
-    vte_terminal_set_font_scale(term, 1);
+    vte_terminal_set_font_scale(VTE_TERMINAL(t->term), 1);
 
-    term_set_size(win, term, width, height);
+    term_set_size(t, width, height, win_ready);
 }
 
 void
-term_set_font_scale(GtkWidget *win, VteTerminal *term, gint direction)
+term_set_font_scale(struct Terminal *t, gint direction)
 {
     gdouble s;
     glong width, height;
 
-    width = vte_terminal_get_column_count(term);
-    height = vte_terminal_get_row_count(term);
+    width = vte_terminal_get_column_count(VTE_TERMINAL(t->term));
+    height = vte_terminal_get_row_count(VTE_TERMINAL(t->term));
 
     if (direction != 0)
     {
-        s = vte_terminal_get_font_scale(term);
+        s = vte_terminal_get_font_scale(VTE_TERMINAL(t->term));
         s *= direction > 0 ? 1.1 : 1.0 / 1.1;
     }
     else
         s = 1;
-    vte_terminal_set_font_scale(term, s);
-    term_set_size(win, term, width, height);
+    vte_terminal_set_font_scale(VTE_TERMINAL(t->term), s);
+    term_set_size(t, width, height, TRUE);
 }
 
 void
-term_set_size(GtkWidget *win, VteTerminal *term, glong width, glong height)
+term_set_size(struct Terminal *t, glong width, glong height, gboolean win_ready)
 {
     GtkRequisition natural;
 
@@ -492,13 +487,14 @@ term_set_size(GtkWidget *win, VteTerminal *term, glong width, glong height)
      * attributes, and we don't need to know anything about it. */
     if (width > 0 && height > 0)
     {
-        vte_terminal_set_size(term, width, height);
+        vte_terminal_set_size(VTE_TERMINAL(t->term), width, height);
 
-        /* win might be NULL when called during early initialization. */
-        if (win != NULL)
+        /* Widgets might not be fully realized yet, when called during
+         * early initialization. */
+        if (win_ready)
         {
-            gtk_widget_get_preferred_size(GTK_WIDGET(term), NULL, &natural);
-            gtk_window_resize(GTK_WINDOW(win), natural.width, natural.height);
+            gtk_widget_get_preferred_size(t->term, NULL, &natural);
+            gtk_window_resize(GTK_WINDOW(t->win), natural.width, natural.height);
         }
     }
 }
