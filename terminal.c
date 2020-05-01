@@ -9,9 +9,6 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
-/* 2083 is VTE's limit. */
-#define HYPERLINK_TARGET_SIZE (2083 + 1)
-
 #include "config.h"
 
 
@@ -22,7 +19,6 @@ struct Terminal
     GtkWidget *win;
     gboolean has_child_exit_status;
     gint child_exit_status;
-    gchar tooltip[HYPERLINK_TARGET_SIZE];
 };
 
 
@@ -210,21 +206,13 @@ void
 sig_hyperlink_changed(VteTerminal *term, gchar *uri, GdkRectangle *bbox,
                       gpointer data)
 {
-    struct Terminal *t = (struct Terminal *)data;
-
     (void)bbox;
+    (void)data;
 
     if (uri == NULL)
         gtk_widget_set_has_tooltip(GTK_WIDGET(term), FALSE);
     else
-    {
-        /* uri points to a string owned by VTE and it can change after
-         * this handlers has finished. It is not 100% clear to me if GTK
-         * creates a copy of that string -- probably not. So, we better
-         * make one. */
-        g_strlcpy(t->tooltip, uri, HYPERLINK_TARGET_SIZE);
-        gtk_widget_set_tooltip_text(GTK_WIDGET(term), t->tooltip);
-    }
+        gtk_widget_set_tooltip_text(GTK_WIDGET(term), uri);
 }
 
 gboolean
@@ -423,7 +411,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     g_signal_connect(G_OBJECT(t->term), "decrease-font-size",
                      G_CALLBACK(sig_decrease_font_size), t->win);
     g_signal_connect(G_OBJECT(t->term), "hyperlink-hover-uri-changed",
-                     G_CALLBACK(sig_hyperlink_changed), t);
+                     G_CALLBACK(sig_hyperlink_changed), NULL);
     g_signal_connect(G_OBJECT(t->term), "increase-font-size",
                      G_CALLBACK(sig_increase_font_size), t->win);
     g_signal_connect(G_OBJECT(t->term), "key-press-event",
