@@ -9,6 +9,10 @@ next
   - The hotkey for launching the history handler has been changed from
     "Ctrl + Shift + F" to "Ctrl + Shift + H" to be more mnemonic.
 
+  [Fixed]
+  - When resetting the font scale, the window will be resized
+    accordingly to keep the same number of columns and lines.
+
 v20.04  2020-04-22
   [Changed]
   - config.h: "c_bold" now defaults to NULL which harmonizes better with
