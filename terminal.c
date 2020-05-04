@@ -432,7 +432,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     }
 
     vte_terminal_spawn_async(VTE_TERMINAL(t->term), VTE_PTY_DEFAULT, NULL,
-                             args_use, NULL, spawn_flags, NULL, NULL, NULL, 60,
+                             args_use, NULL, spawn_flags, NULL, NULL, NULL, -1,
                              NULL, cb_spawn_async, t);
 }
 
