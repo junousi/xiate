@@ -12,6 +12,7 @@ next
   [Fixed]
   - When resetting the font scale, the window will be resized
     accordingly to keep the same number of columns and lines.
+  - Makefile: Copy config.h from config.def.h if it does not exist.
 
 v20.04  2020-04-22
   [Changed]
