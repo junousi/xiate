@@ -1,3 +1,13 @@
+VTE bugs
+========
+
+xiate uses VTE as a backend. From time to time, there are bugs in that
+library. Such as:
+
+    Terminal hangs on close if forked processes are still running
+    https://gitlab.gnome.org/GNOME/vte/-/issues/204
+
+
 Setting WM_CLASS is deprecated in GTK
 =====================================
 
