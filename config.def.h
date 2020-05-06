@@ -1,6 +1,6 @@
-/* If no other argument vector is specified via the UNIX socket, then a
- * newly created terminal window will launch the user's shell. This
- * option specifies whether the shell will be a login shell or not. */
+/* If no other argument vector is specified via "-e ...", then a newly
+ * created terminal window will launch the user's shell. This option
+ * specifies whether the shell will be a login shell or not. */
 gboolean login_shell = TRUE;
 
 /* Shall the escape sequence for "bold" also switch to a brighter color?
