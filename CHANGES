@@ -1,6 +1,6 @@
 Release history for xiate
 
-next
+v20.05  2020-05-15
   [Changed]
   - Hotkeys for changing fonts have been revised. They no longer depend
     on you having a keypad. This also changes how fonts are addressed
