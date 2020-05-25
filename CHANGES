@@ -1,6 +1,9 @@
 Release history for xiate
 
 next
+  [Fixed]
+  - Outdated hotkey was listed in config.def.h.
+
   [Added]
   - "Ctrl + Shift + P" selects previous font. (Opposite of the already
     existing "Ctrl + Shift + N".)
