@@ -1,6 +1,6 @@
 Release history for xiate
 
-next
+v20.06  2020-06-09
   [Fixed]
   - Outdated hotkey was listed in config.def.h.
 
