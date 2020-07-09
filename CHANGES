@@ -1,5 +1,9 @@
 Release history for xiate
 
+next
+  [Fixed]
+  - Build no longer depends on GNU sed.
+
 v20.06  2020-06-09
   [Fixed]
   - Outdated hotkey was listed in config.def.h.

@@ -1,6 +1,6 @@
 CFLAGS += -std=c99 -Wall -Wextra -O3
 __NAME__ = xiate
-__NAME_CAPITALIZED__ = `echo $(__NAME__) | sed 's/^./\U&\E/'`
+__NAME_CAPITALIZED__ = Xiate
 
 INSTALL = install
 INSTALL_PROGRAM = $(INSTALL)
