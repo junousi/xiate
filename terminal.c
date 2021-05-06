@@ -1,3 +1,4 @@
+#include <glib.h>
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,7 +10,9 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
-#include "config.h"
+#include "defaults.h"
+char **fonts_real = fonts;
+gsize fonts_len = sizeof fonts / sizeof fonts[0];
 
 
 struct Terminal
@@ -25,6 +28,7 @@ struct Terminal
 
 void cb_spawn_async(VteTerminal *, GPid, GError *, gpointer);
 void handle_history(VteTerminal *);
+gboolean ini_load(void);
 char *safe_emsg(GError *);
 void sig_bell(VteTerminal *, gpointer);
 gboolean sig_button_press(GtkWidget *, GdkEvent *, gpointer);
@@ -100,6 +104,145 @@ free_and_out:
     if (tmpfile != NULL)
         g_object_unref(tmpfile);
     g_clear_error(&err);
+}
+
+gboolean
+ini_load(void)
+{
+    GKeyFile *ini = NULL;
+    GError *err;
+    gchar *p;
+    gboolean ret;
+    gchar **lst;
+    gint64 int64;
+    gsize len;
+    char *color_order[] = {
+        "dark_black",
+        "dark_red",
+        "dark_green",
+        "dark_yellow",
+        "dark_blue",
+        "dark_magenta",
+        "dark_cyan",
+        "dark_white",
+        "bright_black",
+        "bright_red",
+        "bright_green",
+        "bright_yellow",
+        "bright_blue",
+        "bright_magenta",
+        "bright_cyan",
+        "bright_white",
+    };
+    size_t i;
+
+    p = g_build_filename(g_get_user_config_dir(), __NAME__, "config.ini", NULL);
+    ini = g_key_file_new();
+    ret = g_key_file_load_from_file(ini, p, G_KEY_FILE_NONE, NULL);
+    g_free(p);
+
+    if (!ret)
+        return FALSE;
+
+    err = NULL;
+    ret = g_key_file_get_boolean(ini, "Options", "login_shell", &err);
+    if (err == NULL)
+        login_shell = ret;
+
+    err = NULL;
+    ret = g_key_file_get_boolean(ini, "Options", "bold_is_bright", &err);
+    if (err == NULL)
+        bold_is_bright = ret;
+
+    lst = g_key_file_get_string_list(ini, "Options", "fonts", &len, NULL);
+    if (lst != NULL)
+    {
+        fonts_real = lst;
+        fonts_len = len;
+    }
+
+    err = NULL;
+    int64 = g_key_file_get_int64(ini, "Options", "scrollback_lines", &err);
+    if (err == NULL)
+        scrollback_lines = int64;
+
+    p = g_key_file_get_string(ini, "Options", "link_regex", NULL);
+    if (p != NULL)
+        link_regex = p;
+
+    p = g_key_file_get_string(ini, "Options", "link_handler", NULL);
+    if (p != NULL)
+        link_handler = p;
+
+    p = g_key_file_get_string(ini, "Options", "history_handler", NULL);
+    if (p != NULL)
+        history_handler = p;
+
+    p = g_key_file_get_string(ini, "Options", "cursor_blink_mode", NULL);
+    if (p != NULL)
+    {
+        if (strcmp(p, "VTE_CURSOR_BLINK_SYSTEM") == 0)
+            cursor_blink_mode = VTE_CURSOR_BLINK_SYSTEM;
+        if (strcmp(p, "VTE_CURSOR_BLINK_ON") == 0)
+            cursor_blink_mode = VTE_CURSOR_BLINK_ON;
+        if (strcmp(p, "VTE_CURSOR_BLINK_OFF") == 0)
+            cursor_blink_mode = VTE_CURSOR_BLINK_OFF;
+    }
+
+    p = g_key_file_get_string(ini, "Options", "cursor_shape", NULL);
+    if (p != NULL)
+    {
+        if (strcmp(p, "VTE_CURSOR_SHAPE_BLOCK") == 0)
+            cursor_shape = VTE_CURSOR_SHAPE_BLOCK;
+        if (strcmp(p, "VTE_CURSOR_SHAPE_IBEAM") == 0)
+            cursor_shape = VTE_CURSOR_SHAPE_IBEAM;
+        if (strcmp(p, "VTE_CURSOR_SHAPE_UNDERLINE") == 0)
+            cursor_shape = VTE_CURSOR_SHAPE_UNDERLINE;
+    }
+
+    p = g_key_file_get_string(ini, "Colors", "cursor", NULL);
+    if (p != NULL)
+    {
+        if (strcmp(p, "NULL") == 0)
+            c_cursor = NULL;
+        else
+            c_cursor = p;
+    }
+
+    p = g_key_file_get_string(ini, "Colors", "cursor_foreground", NULL);
+    if (p != NULL)
+    {
+        if (strcmp(p, "NULL") == 0)
+            c_cursor_foreground = NULL;
+        else
+            c_cursor_foreground = p;
+    }
+
+    p = g_key_file_get_string(ini, "Colors", "bold", NULL);
+    if (p != NULL)
+    {
+        if (strcmp(p, "NULL") == 0)
+            c_bold = NULL;
+        else
+            c_bold = p;
+    }
+
+    p = g_key_file_get_string(ini, "Colors", "foreground", NULL);
+    if (p != NULL)
+        c_foreground = p;
+
+    p = g_key_file_get_string(ini, "Colors", "background", NULL);
+    if (p != NULL)
+        c_background = p;
+
+    for (i = 0; i < sizeof color_order / sizeof color_order[0]; i++)
+    {
+        p = g_key_file_get_string(ini, "Colors", color_order[i], NULL);
+        if (p != NULL)
+           c_palette[i] = p;
+    }
+
+    return TRUE;
 }
 
 char *
@@ -223,12 +366,12 @@ sig_key_press(GtkWidget *widget, GdkEvent *event, gpointer data)
                 return TRUE;
             case GDK_KEY_N:
                 t->current_font++;
-                t->current_font %= sizeof fonts / sizeof fonts[0];
+                t->current_font %= fonts_len;
                 term_activate_current_font(t, TRUE);
                 return TRUE;
             case GDK_KEY_P:
                 if (t->current_font == 0)
-                    t->current_font = sizeof fonts / sizeof fonts[0] - 1;
+                    t->current_font = fonts_len - 1;
                 else
                     t->current_font--;
                 term_activate_current_font(t, TRUE);
@@ -449,7 +592,7 @@ term_activate_current_font(struct Terminal *t, gboolean win_ready)
     PangoFontDescription *font_desc = NULL;
     glong width, height;
 
-    if (t->current_font >= sizeof fonts / sizeof fonts[0])
+    if (t->current_font >= fonts_len)
     {
         fprintf(stderr, __NAME__": Warning: Invalid font index\n");
         return;
@@ -458,7 +601,7 @@ term_activate_current_font(struct Terminal *t, gboolean win_ready)
     width = vte_terminal_get_column_count(VTE_TERMINAL(t->term));
     height = vte_terminal_get_row_count(VTE_TERMINAL(t->term));
 
-    font_desc = pango_font_description_from_string(fonts[t->current_font]);
+    font_desc = pango_font_description_from_string(fonts_real[t->current_font]);
     vte_terminal_set_font(VTE_TERMINAL(t->term), font_desc);
     pango_font_description_free(font_desc);
     vte_terminal_set_font_scale(VTE_TERMINAL(t->term), 1);
@@ -514,6 +657,10 @@ main(int argc, char **argv)
     struct Terminal t = {0};
 
     gtk_init(&argc, &argv);
+
+    if (!ini_load())
+        return 1;
+
     term_new(&t, argc, argv);
     gtk_main();
 }
