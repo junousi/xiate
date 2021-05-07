@@ -1,4 +1,4 @@
-.TH xiate 1 "2020-05-18" "xiate" "User Commands"
+.TH xiate 1 "2021-05-07" "xiate" "User Commands"
 .\" --------------------------------------------------------------------
 .SH NAME
 xiate \- terminal emulator
@@ -41,12 +41,12 @@ be overwritten by child processes.
 In addition, the following options are specific to \fBxiate\fP:
 .TP
 \fB\-\-fontindex\fP \fIindex\fP
-Start up with this font. Fonts are defined in \fIconfig.h\fP.
+Start up with this font. Fonts are defined in \fIconfig.ini\fP.
 \fIindex\fP starts at 0.
 .\" --------------------------------------------------------------------
-.SH "KEY BINDINGS"
+.SH "DEFAULT KEY BINDINGS"
 In windows launched by \fBxiate\fP, you can use the following key
-bindings.
+bindings. They can be customized using \fIconfig.ini\fP.
 .P
 .TP
 \fBCtrl + Shift + C\fP
@@ -57,13 +57,13 @@ Paste from clipboard.
 .TP
 \fBCtrl + Shift + H\fP
 Dumps the terminal history to a file and calls a tool you specified in
-\fIconfig.h\fP. The name of the tool defaults to
+\fIconfig.ini\fP. The name of the tool defaults to
 \fBxiate-history-handler\fP and it will be looked for in your
 $\fPPATH\fP.
 .TP
 \fBCtrl + Shift + N\fP
 Switch to next configured font. Wraps around to first font at the end.
-Fonts are defined in \fIconfig.h\fP. This also resets the font size.
+Fonts are defined in \fIconfig.ini\fP. This also resets the font size.
 .TP
 \fBCtrl + Shift + P\fP
 Switch to previous configured font. Wraps around to last font at the
@@ -80,11 +80,11 @@ Reset font size.
 .TP
 \fBRight mouse button\fP
 When hovering over links, you can use this button to invoke your link
-handler. The name of this tool is defined in \fIconfig.h\fP. It defaults
-to \fBxiate-link-handler\fP and it will be looked for in your
+handler. The name of this tool is defined in \fIconfig.ini\fP. It
+defaults to \fBxiate-link-handler\fP and it will be looked for in your
 $\fPPATH\fP. \fBargv[1]\fP will be set to \fBexplicit\fP for explicit
 hyperlinks or to \fBmatched\fP if a link has been detected via the
-regular expression (also see the comments in \fIconfig.h\fP).
+regular expression (also see the comments in \fIconfig.ini\fP).
 \fBargv[2]\fP will contain the actual link.
 .\" --------------------------------------------------------------------
 .SH "EXIT STATUS"
@@ -101,6 +101,12 @@ can't tell it apart from internal xiate errors anyway.
 .TP
 .B DISPLAY
 Points to the X11 display on which to open terminal windows.
+.\" --------------------------------------------------------------------
+.SH FILES
+.TP
+$\fIXDG_CONFIG_HOME\fP/xiate/config.ini
+Optional configuration file. \fBxiate\fP comes with an example file
+\fIconfig.example.ini\fP, which documents all available options.
 .\" --------------------------------------------------------------------
 .SH LICENSE
 \fBxiate\fP is released under the MIT license. See the accompanying
