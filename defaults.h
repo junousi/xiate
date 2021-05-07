@@ -2,7 +2,6 @@ gboolean login_shell = TRUE;
 gboolean bold_is_bright = FALSE;
 char *fonts[] = {
     "Monospace 9",
-    "Terminus 10",
 };
 glong scrollback_lines = 50000;
 char *link_regex = "[a-z]+://[[:graph:]]+";
