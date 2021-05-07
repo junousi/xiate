@@ -22,8 +22,10 @@ Installation
 
 The following C libraries (or newer versions) are required:
 
-    - GTK+ 3.20
-    - VTE 0.50
+    - GTK+ 3.24
+    - VTE 0.64
+
+Older versions might work, too, but they are not tested.
 
 xiate expects to be run on a POSIX-ish operating system.
 
