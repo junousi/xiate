@@ -5,6 +5,9 @@ next
   - "config.h" is gone. Instead, you can now place a "config.ini" in the
     directory "~/.config/xiate".
 
+  [Added]
+  - Hotkeys are now customizable via config.ini.
+
 v20.07  2020-07-19
   [Fixed]
   - Build no longer depends on GNU sed.

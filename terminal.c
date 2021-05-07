@@ -10,7 +10,13 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
+struct NamedKey {
+    char *name;
+    guint value;
+};
+
 #include "defaults.h"
+
 char **fonts_real = fonts;
 gsize fonts_len = sizeof fonts / sizeof fonts[0];
 
@@ -27,6 +33,7 @@ struct Terminal
 
 
 void cb_spawn_async(VteTerminal *, GPid, GError *, gpointer);
+guint get_named_key(char *);
 void handle_history(VteTerminal *);
 gboolean ini_load(void);
 char *safe_emsg(GError *);
@@ -56,6 +63,19 @@ cb_spawn_async(VteTerminal *term, GPid pid, GError *err, gpointer data)
         fprintf(stderr, __NAME__": Spawning child failed: %s\n", err->message);
         gtk_widget_destroy(t->win);
     }
+}
+
+guint
+get_named_key(char *name)
+{
+    size_t i;
+
+    for (i = 0; i < sizeof named_keys / sizeof named_keys[0]; i++)
+        if (strcmp(named_keys[i].name, name) == 0)
+            return named_keys[i].value;
+
+    fprintf(stderr, __NAME__": Did not find named key '%s'\n", name);
+    return 0;
 }
 
 void
@@ -115,6 +135,7 @@ ini_load(void)
     gboolean ret;
     gchar **lst;
     gint64 int64;
+    guint uint;
     gsize len;
     char *color_order[] = {
         "dark_black",
@@ -242,6 +263,24 @@ ini_load(void)
            c_palette[i] = p;
     }
 
+    err = NULL;
+    int64 = g_key_file_get_int64(ini, "Keys", "button_link", &err);
+    if (err == NULL)
+        button_link = int64;
+
+    for (i = 0; i < sizeof named_keys / sizeof named_keys[0]; i++)
+    {
+        err = NULL;
+        p = g_key_file_get_string(ini, "Keys", named_keys[i].name, &err);
+        if (err == NULL)
+        {
+            uint = gdk_keyval_from_name(p);
+            if (uint != GDK_KEY_VoidSymbol)
+                named_keys[i].value = uint;
+            g_free(p);
+        }
+    }
+
     return TRUE;
 }
 
@@ -280,7 +319,7 @@ sig_button_press(GtkWidget *widget, GdkEvent *event, gpointer data)
 
     if (event->type == GDK_BUTTON_PRESS)
     {
-        if (((GdkEventButton *)event)->button == 3)
+        if (((GdkEventButton *)event)->button == button_link)
         {
             if ((url = vte_terminal_hyperlink_check_event(VTE_TERMINAL(widget),
                                                           event)) != NULL)
@@ -350,41 +389,56 @@ sig_key_press(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
     VteTerminal *term = VTE_TERMINAL(widget);
     struct Terminal *t = (struct Terminal *)data;
+    guint kv;
 
     if (((GdkEventKey *)event)->state & GDK_CONTROL_MASK)
     {
-        switch (((GdkEventKey *)event)->keyval)
+        kv = ((GdkEventKey *)event)->keyval;
+        if (kv == get_named_key("key_copy_to_clipboard"))
         {
-            case GDK_KEY_C:
-                vte_terminal_copy_clipboard_format(term, VTE_FORMAT_TEXT);
-                return TRUE;
-            case GDK_KEY_V:
-                vte_terminal_paste_clipboard(term);
-                return TRUE;
-            case GDK_KEY_H:
-                handle_history(term);
-                return TRUE;
-            case GDK_KEY_N:
-                t->current_font++;
-                t->current_font %= fonts_len;
-                term_activate_current_font(t, TRUE);
-                return TRUE;
-            case GDK_KEY_P:
-                if (t->current_font == 0)
-                    t->current_font = fonts_len - 1;
-                else
-                    t->current_font--;
-                term_activate_current_font(t, TRUE);
-                return TRUE;
-            case GDK_KEY_I:
-                term_change_font_scale(t, 1);
-                return TRUE;
-            case GDK_KEY_O:
-                term_change_font_scale(t, -1);
-                return TRUE;
-            case GDK_KEY_R:
-                term_change_font_scale(t, 0);
-                return TRUE;
+            vte_terminal_copy_clipboard_format(term, VTE_FORMAT_TEXT);
+            return TRUE;
+        }
+        if (kv == get_named_key("key_paste_from_clipboard"))
+        {
+            vte_terminal_copy_clipboard_format(term, VTE_FORMAT_TEXT);
+            return TRUE;
+        }
+        if (kv == get_named_key("key_handle_history"))
+        {
+            handle_history(term);
+            return TRUE;
+        }
+        if (kv == get_named_key("key_next_font"))
+        {
+            t->current_font++;
+            t->current_font %= fonts_len;
+            term_activate_current_font(t, TRUE);
+            return TRUE;
+        }
+        if (kv == get_named_key("key_previous_font"))
+        {
+            if (t->current_font == 0)
+                t->current_font = fonts_len - 1;
+            else
+                t->current_font--;
+            term_activate_current_font(t, TRUE);
+            return TRUE;
+        }
+        if (kv == get_named_key("key_zoom_in"))
+        {
+            term_change_font_scale(t, 1);
+            return TRUE;
+        }
+        if (kv == get_named_key("key_zoom_out"))
+        {
+            term_change_font_scale(t, -1);
+            return TRUE;
+        }
+        if (kv == get_named_key("key_zoom_reset"))
+        {
+            term_change_font_scale(t, 0);
+            return TRUE;
         }
     }
 
