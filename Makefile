@@ -18,10 +18,7 @@ man1dir = $(mandir)/man1
 
 all: $(__NAME__)
 
-config.h:
-	cp config.def.h config.h
-
-$(__NAME__): terminal.c config.h
+$(__NAME__): terminal.c
 	$(CC) $(CFLAGS) $(LDFLAGS) \
 		-D__NAME__=\"$(__NAME__)\" \
 		-D__NAME_CAPITALIZED__=\"$(__NAME_CAPITALIZED__)\" \
