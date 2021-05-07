@@ -145,12 +145,19 @@ ini_load(void)
     size_t i;
 
     p = g_build_filename(g_get_user_config_dir(), __NAME__, "config.ini", NULL);
-    ini = g_key_file_new();
-    ret = g_key_file_load_from_file(ini, p, G_KEY_FILE_NONE, NULL);
-    g_free(p);
+    if (!g_file_test(p, G_FILE_TEST_EXISTS))
+        /* No config, welp, doesn't matter, use our defaults. */
+        return TRUE;
 
-    if (!ret)
+    ini = g_key_file_new();
+    if (!g_key_file_load_from_file(ini, p, G_KEY_FILE_NONE, NULL))
+    {
+        fprintf(stderr, __NAME__": %s could not be loaded\n", p);
+        g_free(p);
         return FALSE;
+    }
+
+    g_free(p);
 
     err = NULL;
     ret = g_key_file_get_boolean(ini, "Options", "login_shell", &err);
