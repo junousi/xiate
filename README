@@ -27,10 +27,6 @@ The following C libraries (or newer versions) are required:
 
 xiate expects to be run on a POSIX-ish operating system.
 
-You can customize the program by creating your own config.h based on
-config.def.h. In any case, config.h must exist in order to build the
-program.
-
 To build the program and install it to /usr/local:
 
     $ make
@@ -51,3 +47,6 @@ You can also run a program directly:
     $ xiate -e vim
 
 There are some more command line arguments. Please refer to the manpage.
+
+xiate reads "$XDG_CONFIG_HOME/xiate/config.ini" on startup. Please
+consult "config.example.ini" to find out which options you can set.
