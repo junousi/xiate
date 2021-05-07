@@ -10,6 +10,11 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
+struct NamedColor {
+    char *name;
+    char *value;
+};
+
 struct NamedKey {
     char *name;
     guint value;
@@ -137,24 +142,6 @@ ini_load(void)
     gint64 int64;
     guint uint;
     gsize len;
-    char *color_order[] = {
-        "dark_black",
-        "dark_red",
-        "dark_green",
-        "dark_yellow",
-        "dark_blue",
-        "dark_magenta",
-        "dark_cyan",
-        "dark_white",
-        "bright_black",
-        "bright_red",
-        "bright_green",
-        "bright_yellow",
-        "bright_blue",
-        "bright_magenta",
-        "bright_cyan",
-        "bright_white",
-    };
     size_t i;
 
     p = g_build_filename(g_get_user_config_dir(), __NAME__, "config.ini", NULL);
@@ -256,11 +243,11 @@ ini_load(void)
     if (p != NULL)
         c_background = p;
 
-    for (i = 0; i < sizeof color_order / sizeof color_order[0]; i++)
+    for (i = 0; i < sizeof named_colors / sizeof named_colors[0]; i++)
     {
-        p = g_key_file_get_string(ini, "Colors", color_order[i], NULL);
+        p = g_key_file_get_string(ini, "Colors", named_colors[i].name, NULL);
         if (p != NULL)
-           c_palette[i] = p;
+           named_colors[i].value = p;
     }
 
     err = NULL;
@@ -562,7 +549,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     gdk_rgba_parse(&c_foreground_gdk, c_foreground);
     gdk_rgba_parse(&c_background_gdk, c_background);
     for (i = 0; i < 16; i++)
-        gdk_rgba_parse(&c_palette_gdk[i], c_palette[i]);
+        gdk_rgba_parse(&c_palette_gdk[i], named_colors[i].value);
     vte_terminal_set_colors(VTE_TERMINAL(t->term), &c_foreground_gdk,
                             &c_background_gdk, c_palette_gdk, 16);
 

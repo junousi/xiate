@@ -15,23 +15,25 @@ char *c_cursor_foreground = "#000000";
 char *c_bold = NULL;
 char *c_foreground = "#AAAAAA";
 char *c_background = "#000000";
-char *c_palette[16] = {
-    "#000000",  /* Dark Black */
-    "#AA0000",  /* Dark Red */
-    "#00AA00",  /* Dark Green */
-    "#AA5500",  /* Dark Yellow */
-    "#0000AA",  /* Dark Blue */
-    "#AA00AA",  /* Dark Magenta */
-    "#00AAAA",  /* Dark Cyan */
-    "#AAAAAA",  /* Dark White */
-    "#555555",  /* Bright Black */
-    "#FF5555",  /* Bright Red */
-    "#55FF55",  /* Bright Green */
-    "#FFFF55",  /* Bright Yellow */
-    "#5555FF",  /* Bright Blue */
-    "#FF55FF",  /* Bright Magenta */
-    "#55FFFF",  /* Bright Cyan */
-    "#FFFFFF",  /* Bright White */
+struct NamedColor named_colors[] = {
+    /* Order must match standard 16 color order. */
+    { .name = "dark_black",      .value = "#000000", },
+    { .name = "dark_red",        .value = "#AA0000", },
+    { .name = "dark_green",      .value = "#00AA00", },
+    { .name = "dark_yellow",     .value = "#AA5500", },
+    { .name = "dark_blue",       .value = "#0000AA", },
+    { .name = "dark_magenta",    .value = "#AA00AA", },
+    { .name = "dark_cyan",       .value = "#00AAAA", },
+    { .name = "dark_white",      .value = "#AAAAAA", },
+
+    { .name = "bright_black",    .value = "#555555", },
+    { .name = "bright_red",      .value = "#FF5555", },
+    { .name = "bright_green",    .value = "#55FF55", },
+    { .name = "bright_yellow",   .value = "#FFFF55", },
+    { .name = "bright_blue",     .value = "#5555FF", },
+    { .name = "bright_magenta",  .value = "#FF55FF", },
+    { .name = "bright_cyan",     .value = "#55FFFF", },
+    { .name = "bright_white",    .value = "#FFFFFF", },
 };
 guint button_link = 3;
 struct NamedKey named_keys[] = {
