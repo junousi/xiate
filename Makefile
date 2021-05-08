@@ -23,7 +23,7 @@ $(__NAME__): terminal.c
 		-D__NAME__=\"$(__NAME__)\" \
 		-D__NAME_CAPITALIZED__=\"$(__NAME_CAPITALIZED__)\" \
 		-o $@ $< \
-		`pkg-config --cflags --libs gtk+-3.0 vte-2.91`
+		`pkg-config --cflags --libs glib-2.0 gtk+-3.0 vte-2.91`
 
 install: $(__NAME__) installdirs
 	$(INSTALL_PROGRAM) $(__NAME__) $(DESTDIR)$(bindir)/$(__NAME__)
