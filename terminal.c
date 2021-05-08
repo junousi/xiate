@@ -277,9 +277,8 @@ ini_load(void)
 
     for (i = 0; i < sizeof named_keys / sizeof named_keys[0]; i++)
     {
-        err = NULL;
-        p = g_key_file_get_string(ini, "Keys", named_keys[i].name, &err);
-        if (err == NULL)
+        p = g_key_file_get_string(ini, "Keys", named_keys[i].name, NULL);
+        if (p != NULL)
         {
             uint = gdk_keyval_from_name(p);
             if (uint != GDK_KEY_VoidSymbol)
