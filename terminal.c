@@ -202,6 +202,8 @@ ini_load(void)
             cursor_blink_mode = VTE_CURSOR_BLINK_ON;
         if (strcmp(p, "VTE_CURSOR_BLINK_OFF") == 0)
             cursor_blink_mode = VTE_CURSOR_BLINK_OFF;
+
+        g_free(p);
     }
 
     p = g_key_file_get_string(ini, "Options", "cursor_shape", NULL);
@@ -213,13 +215,18 @@ ini_load(void)
             cursor_shape = VTE_CURSOR_SHAPE_IBEAM;
         if (strcmp(p, "VTE_CURSOR_SHAPE_UNDERLINE") == 0)
             cursor_shape = VTE_CURSOR_SHAPE_UNDERLINE;
+
+        g_free(p);
     }
 
     p = g_key_file_get_string(ini, "Colors", "cursor", NULL);
     if (p != NULL)
     {
         if (strcmp(p, "NULL") == 0)
+        {
             c_cursor = NULL;
+            g_free(p);
+        }
         else
             c_cursor = p;
     }
@@ -228,7 +235,10 @@ ini_load(void)
     if (p != NULL)
     {
         if (strcmp(p, "NULL") == 0)
+        {
             c_cursor_foreground = NULL;
+            g_free(p);
+        }
         else
             c_cursor_foreground = p;
     }
@@ -237,7 +247,10 @@ ini_load(void)
     if (p != NULL)
     {
         if (strcmp(p, "NULL") == 0)
+        {
             c_bold = NULL;
+            g_free(p);
+        }
         else
             c_bold = p;
     }
