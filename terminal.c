@@ -395,7 +395,7 @@ sig_key_press(GtkWidget *widget, GdkEvent *event, gpointer data)
         }
         if (kv == get_named_key("key_paste_from_clipboard"))
         {
-            vte_terminal_copy_clipboard_format(term, VTE_FORMAT_TEXT);
+            vte_terminal_paste_clipboard(term);
             return TRUE;
         }
         if (kv == get_named_key("key_handle_history"))
