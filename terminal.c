@@ -94,6 +94,7 @@ cfg(char *s, char *n)
             return &config[i];
     }
 
+    fprintf(stderr, __NAME__": Internal error, unable to find cfg '%s'/'%s'\n", s, n);
     return NULL;
 }
 
