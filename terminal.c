@@ -94,7 +94,8 @@ cfg(char *s, char *n)
             return &config[i];
     }
 
-    fprintf(stderr, __NAME__": Internal error, unable to find cfg '%s'/'%s'\n", s, n);
+    fprintf(stderr, __NAME__": Internal error, unable to find cfg '%s'/'%s'\n",
+            s, n);
     return NULL;
 }
 
@@ -146,7 +147,8 @@ handle_history(VteTerminal *term)
     tmpfile = g_file_new_tmp(NULL, &io_stream, &err);
     if (tmpfile == NULL)
     {
-        fprintf(stderr, __NAME__": Could not write history: %s\n", safe_emsg(err));
+        fprintf(stderr, __NAME__": Could not write history: %s\n",
+                safe_emsg(err));
         goto free_and_out;
     }
 
@@ -154,13 +156,15 @@ handle_history(VteTerminal *term)
     if (!vte_terminal_write_contents_sync(term, out_stream, VTE_WRITE_DEFAULT,
                                           NULL, &err))
     {
-        fprintf(stderr, __NAME__": Could not write history: %s\n", safe_emsg(err));
+        fprintf(stderr, __NAME__": Could not write history: %s\n",
+                safe_emsg(err));
         goto free_and_out;
     }
 
     if (!g_io_stream_close(G_IO_STREAM(io_stream), NULL, NULL))
     {
-        fprintf(stderr, __NAME__": Could not write history: %s\n", safe_emsg(err));
+        fprintf(stderr, __NAME__": Could not write history: %s\n",
+                safe_emsg(err));
         goto free_and_out;
     }
 
@@ -228,7 +232,8 @@ ini_load(void)
                 }
                 break;
             case STRINGLIST:
-                lst = g_key_file_get_string_list(ini, config[i].s, config[i].n, &len, &err);
+                lst = g_key_file_get_string_list(ini, config[i].s, config[i].n,
+                                                 &len, &err);
                 if (lst != NULL)
                 {
                     config[i].v.sl = lst;
@@ -236,17 +241,20 @@ ini_load(void)
                 }
                 break;
             case BOOLEAN:
-                ret = g_key_file_get_boolean(ini, config[i].s, config[i].n, &err);
+                ret = g_key_file_get_boolean(ini, config[i].s, config[i].n,
+                                             &err);
                 if (err == NULL)
                     config[i].v.b = ret;
                 break;
             case INT64:
-                int64 = g_key_file_get_int64(ini, config[i].s, config[i].n, &err);
+                int64 = g_key_file_get_int64(ini, config[i].s, config[i].n,
+                                             &err);
                 if (err == NULL)
                     config[i].v.i = int64;
                 break;
             case UINT64:
-                uint64 = g_key_file_get_int64(ini, config[i].s, config[i].n, &err);
+                uint64 = g_key_file_get_int64(ini, config[i].s, config[i].n,
+                                              &err);
                 if (err == NULL)
                     config[i].v.i = uint64;
                 break;
@@ -533,11 +541,15 @@ term_new(struct Terminal *t, int argc, char **argv)
     term_activate_current_font(t, FALSE);
     gtk_widget_show_all(t->win);
 
-    vte_terminal_set_bold_is_bright(VTE_TERMINAL(t->term), cfg("Options", "bold_is_bright")->v.b);
-    vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(t->term), get_cursor_blink_mode());
+    vte_terminal_set_bold_is_bright(VTE_TERMINAL(t->term),
+                                    cfg("Options", "bold_is_bright")->v.b);
+    vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(t->term),
+                                       get_cursor_blink_mode());
     vte_terminal_set_cursor_shape(VTE_TERMINAL(t->term), get_cursor_shape());
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(t->term), TRUE);
-    vte_terminal_set_scrollback_lines(VTE_TERMINAL(t->term), (glong)cfg("Options", "scrollback_lines")->v.ui);
+    vte_terminal_set_scrollback_lines(VTE_TERMINAL(t->term),
+                                      (glong)cfg("Options",
+                                                 "scrollback_lines")->v.ui);
     vte_terminal_set_allow_hyperlink(VTE_TERMINAL(t->term), TRUE);
 
     gdk_rgba_parse(&c_foreground_gdk, cfg("Colors", "foreground")->v.s);
