@@ -1,49 +1,45 @@
-gboolean login_shell = TRUE;
-gboolean bold_is_bright = FALSE;
-char *fonts[] = {
-    "Monospace 9",
-};
-glong scrollback_lines = 50000;
-char *link_regex = "[a-z]+://[[:graph:]]+";
-char *link_handler = "xiate-link-handler";
-char *history_handler = "xiate-history-handler";
-VteCursorBlinkMode cursor_blink_mode = VTE_CURSOR_BLINK_OFF;
-VteCursorShape cursor_shape = VTE_CURSOR_SHAPE_BLOCK;
-char *c_foreground = "#AAAAAA";
-char *c_background = "#000000";
-struct NamedColor c_nullable[] = {
-    { .name = "cursor",             .value = "#00FF00" },
-    { .name = "cursor_foreground",  .value = "#000000" },
-    { .name = "bold",               .value = NULL      },
-};
-struct NamedColor c_palette[] = {
-    /* Order must match standard 16 color order. */
-    { .name = "dark_black",      .value = "#000000" },
-    { .name = "dark_red",        .value = "#AA0000" },
-    { .name = "dark_green",      .value = "#00AA00" },
-    { .name = "dark_yellow",     .value = "#AA5500" },
-    { .name = "dark_blue",       .value = "#0000AA" },
-    { .name = "dark_magenta",    .value = "#AA00AA" },
-    { .name = "dark_cyan",       .value = "#00AAAA" },
-    { .name = "dark_white",      .value = "#AAAAAA" },
+struct ConfigItem config[] = {
+    { .s = "Options", .n = "login_shell",        .t = BOOLEAN,     .v.b = TRUE                                },
+    { .s = "Options", .n = "bold_is_bright",     .t = BOOLEAN,     .v.b = FALSE                               },
+    { .s = "Options", .n = "fonts",              .t = STRINGLIST,  .v.sl = (char *[]){"Monospace 9"},  .l = 1 },
+    { .s = "Options", .n = "scrollback_lines",   .t = INT64,       .v.i = 50000                               },
+    { .s = "Options", .n = "link_regex",         .t = STRING,      .v.s = "[a-z]+://[[:graph:]]+"             },
+    { .s = "Options", .n = "link_handler",       .t = STRING,      .v.s = "xiate-link-handler"                },
+    { .s = "Options", .n = "history_handler",    .t = STRING,      .v.s = "xiate-history-handler"             },
+    { .s = "Options", .n = "cursor_blink_mode",  .t = STRING,      .v.s = "VTE_CURSOR_BLINK_OFF"              },
+    { .s = "Options", .n = "cursor_shape",       .t = STRING,      .v.s = "VTE_CURSOR_SHAPE_BLOCK"            },
 
-    { .name = "bright_black",    .value = "#555555" },
-    { .name = "bright_red",      .value = "#FF5555" },
-    { .name = "bright_green",    .value = "#55FF55" },
-    { .name = "bright_yellow",   .value = "#FFFF55" },
-    { .name = "bright_blue",     .value = "#5555FF" },
-    { .name = "bright_magenta",  .value = "#FF55FF" },
-    { .name = "bright_cyan",     .value = "#55FFFF" },
-    { .name = "bright_white",    .value = "#FFFFFF" },
-};
-guint button_link = 3;
-struct NamedKey named_keys[] = {
-    { .name = "key_copy_to_clipboard",     .value = GDK_KEY_C },
-    { .name = "key_paste_from_clipboard",  .value = GDK_KEY_V },
-    { .name = "key_handle_history",        .value = GDK_KEY_H },
-    { .name = "key_next_font",             .value = GDK_KEY_N },
-    { .name = "key_previous_font",         .value = GDK_KEY_P },
-    { .name = "key_zoom_in",               .value = GDK_KEY_I },
-    { .name = "key_zoom_out",              .value = GDK_KEY_O },
-    { .name = "key_zoom_reset",            .value = GDK_KEY_R },
+    { .s = "Colors",  .n = "foreground",         .t = STRING,  .v.s = "#AAAAAA" },
+    { .s = "Colors",  .n = "background",         .t = STRING,  .v.s = "#000000" },
+    { .s = "Colors",  .n = "cursor",             .t = STRING,  .v.s = "#00FF00" },
+    { .s = "Colors",  .n = "cursor_foreground",  .t = STRING,  .v.s = "#000000" },
+    { .s = "Colors",  .n = "bold",               .t = STRING,  .v.s = NULL      },
+
+    { .s = "Colors",  .n = "dark_black",    .t = STRING,  .v.s = "#000000" },
+    { .s = "Colors",  .n = "dark_red",      .t = STRING,  .v.s = "#AA0000" },
+    { .s = "Colors",  .n = "dark_green",    .t = STRING,  .v.s = "#00AA00" },
+    { .s = "Colors",  .n = "dark_yellow",   .t = STRING,  .v.s = "#AA5500" },
+    { .s = "Colors",  .n = "dark_blue",     .t = STRING,  .v.s = "#0000AA" },
+    { .s = "Colors",  .n = "dark_magenta",  .t = STRING,  .v.s = "#AA00AA" },
+    { .s = "Colors",  .n = "dark_cyan",     .t = STRING,  .v.s = "#00AAAA" },
+    { .s = "Colors",  .n = "dark_white",    .t = STRING,  .v.s = "#AAAAAA" },
+
+    { .s = "Colors",  .n = "bright_black",    .t = STRING,  .v.s = "#555555" },
+    { .s = "Colors",  .n = "bright_red",      .t = STRING,  .v.s = "#FF5555" },
+    { .s = "Colors",  .n = "bright_green",    .t = STRING,  .v.s = "#55FF55" },
+    { .s = "Colors",  .n = "bright_yellow",   .t = STRING,  .v.s = "#FFFF55" },
+    { .s = "Colors",  .n = "bright_blue",     .t = STRING,  .v.s = "#5555FF" },
+    { .s = "Colors",  .n = "bright_magenta",  .t = STRING,  .v.s = "#FF55FF" },
+    { .s = "Colors",  .n = "bright_cyan",     .t = STRING,  .v.s = "#55FFFF" },
+    { .s = "Colors",  .n = "bright_white",    .t = STRING,  .v.s = "#FFFFFF" },
+
+    { .s = "Controls",  .n = "button_link",               .t = UINT64,  .v.i = 3 },
+    { .s = "Controls",  .n = "key_copy_to_clipboard",     .t = STRING,  .v.s = "C" },
+    { .s = "Controls",  .n = "key_paste_from_clipboard",  .t = STRING,  .v.s = "V" },
+    { .s = "Controls",  .n = "key_handle_history",        .t = STRING,  .v.s = "H" },
+    { .s = "Controls",  .n = "key_next_font",             .t = STRING,  .v.s = "N" },
+    { .s = "Controls",  .n = "key_previous_font",         .t = STRING,  .v.s = "P" },
+    { .s = "Controls",  .n = "key_zoom_in",               .t = STRING,  .v.s = "I" },
+    { .s = "Controls",  .n = "key_zoom_out",              .t = STRING,  .v.s = "O" },
+    { .s = "Controls",  .n = "key_zoom_reset",            .t = STRING,  .v.s = "R" },
 };

@@ -10,20 +10,30 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
-struct NamedColor {
-    char *name;
-    char *value;
+
+enum ConfigItemType {
+    STRING,
+    STRINGLIST,
+    BOOLEAN,
+    INT64,
+    UINT64,
 };
 
-struct NamedKey {
-    char *name;
-    guint value;
+struct ConfigItem {
+    char *s;
+    char *n;
+    enum ConfigItemType t;
+    size_t l;  /* Only used for STRINGLIST */
+    union {
+        char *s;
+        char **sl;
+        gboolean b;
+        gint64 i;
+        guint64 ui;
+    } v;
 };
 
 #include "defaults.h"
-
-char **fonts_real = fonts;
-gsize fonts_len = sizeof fonts / sizeof fonts[0];
 
 
 struct Terminal
@@ -38,8 +48,10 @@ struct Terminal
 
 
 void cb_spawn_async(VteTerminal *, GPid, GError *, gpointer);
-char *get_named_nullable_color(char *);
-guint get_named_key(char *);
+struct ConfigItem *cfg(char *, char *);
+VteCursorBlinkMode get_cursor_blink_mode(void);
+VteCursorShape get_cursor_shape(void);
+guint get_keyval(char *);
 void handle_history(VteTerminal *);
 gboolean ini_load(void);
 char *safe_emsg(GError *);
@@ -71,30 +83,51 @@ cb_spawn_async(VteTerminal *term, GPid pid, GError *err, gpointer data)
     }
 }
 
-char *
-get_named_nullable_color(char *name)
+struct ConfigItem *
+cfg(char *s, char *n)
 {
     size_t i;
 
-    for (i = 0; i < sizeof c_nullable / sizeof c_nullable[0]; i++)
-        if (strcmp(c_nullable[i].name, name) == 0)
-            return c_nullable[i].value;
+    for (i = 0; i < sizeof config / sizeof config[0]; i++)
+    {
+        if (strcmp(config[i].s, s) == 0 && strcmp(config[i].n, n) == 0)
+            return &config[i];
+    }
 
-    fprintf(stderr, __NAME__": Did not find named nullable color '%s'\n", name);
     return NULL;
 }
 
-guint
-get_named_key(char *name)
+VteCursorBlinkMode
+get_cursor_blink_mode(void)
 {
-    size_t i;
+    char *cfg_s = cfg("Options", "cursor_blink_mode")->v.s;
 
-    for (i = 0; i < sizeof named_keys / sizeof named_keys[0]; i++)
-        if (strcmp(named_keys[i].name, name) == 0)
-            return named_keys[i].value;
+    if (strcmp(cfg_s, "VTE_CURSOR_BLINK_SYSTEM") == 0)
+        return VTE_CURSOR_BLINK_SYSTEM;
+    else if (strcmp(cfg_s, "VTE_CURSOR_BLINK_OFF") == 0)
+        return VTE_CURSOR_BLINK_OFF;
+    else
+        return VTE_CURSOR_BLINK_ON;
+}
 
-    fprintf(stderr, __NAME__": Did not find named key '%s'\n", name);
-    return 0;
+VteCursorShape
+get_cursor_shape(void)
+{
+    char *cfg_s = cfg("Options", "cursor_shape")->v.s;
+
+    if (strcmp(cfg_s, "VTE_CURSOR_SHAPE_IBEAM") == 0)
+        return VTE_CURSOR_SHAPE_IBEAM;
+    else if (strcmp(cfg_s, "VTE_CURSOR_SHAPE_UNDERLINE") == 0)
+        return VTE_CURSOR_SHAPE_UNDERLINE;
+    else
+        return VTE_CURSOR_SHAPE_BLOCK;
+}
+
+guint
+get_keyval(char *name)
+{
+    char *cfg_s = cfg("Controls", name)->v.s;
+    return gdk_keyval_from_name(cfg_s);
 }
 
 void
@@ -104,8 +137,10 @@ handle_history(VteTerminal *term)
     GFileIOStream *io_stream = NULL;
     GOutputStream *out_stream = NULL;
     GError *err = NULL;
-    char *argv[] = { history_handler, NULL, NULL };
+    char *argv[] = { NULL, NULL, NULL };
     GSpawnFlags spawn_flags = G_SPAWN_DEFAULT | G_SPAWN_SEARCH_PATH;
+
+    argv[0] = cfg("Options", "history_handler")->v.s;
 
     tmpfile = g_file_new_tmp(NULL, &io_stream, &err);
     if (tmpfile == NULL)
@@ -154,7 +189,7 @@ ini_load(void)
     gboolean ret;
     gchar **lst;
     gint64 int64;
-    guint uint;
+    guint64 uint64;
     gsize len;
     size_t i;
 
@@ -173,110 +208,47 @@ ini_load(void)
 
     g_free(p);
 
-    err = NULL;
-    ret = g_key_file_get_boolean(ini, "Options", "login_shell", &err);
-    if (err == NULL)
-        login_shell = ret;
-
-    err = NULL;
-    ret = g_key_file_get_boolean(ini, "Options", "bold_is_bright", &err);
-    if (err == NULL)
-        bold_is_bright = ret;
-
-    lst = g_key_file_get_string_list(ini, "Options", "fonts", &len, NULL);
-    if (lst != NULL)
+    for (i = 0; i < sizeof config / sizeof config[0]; i++)
     {
-        fonts_real = lst;
-        fonts_len = len;
-    }
-
-    err = NULL;
-    int64 = g_key_file_get_int64(ini, "Options", "scrollback_lines", &err);
-    if (err == NULL)
-        scrollback_lines = int64;
-
-    p = g_key_file_get_string(ini, "Options", "link_regex", NULL);
-    if (p != NULL)
-        link_regex = p;
-
-    p = g_key_file_get_string(ini, "Options", "link_handler", NULL);
-    if (p != NULL)
-        link_handler = p;
-
-    p = g_key_file_get_string(ini, "Options", "history_handler", NULL);
-    if (p != NULL)
-        history_handler = p;
-
-    p = g_key_file_get_string(ini, "Options", "cursor_blink_mode", NULL);
-    if (p != NULL)
-    {
-        if (strcmp(p, "VTE_CURSOR_BLINK_SYSTEM") == 0)
-            cursor_blink_mode = VTE_CURSOR_BLINK_SYSTEM;
-        if (strcmp(p, "VTE_CURSOR_BLINK_ON") == 0)
-            cursor_blink_mode = VTE_CURSOR_BLINK_ON;
-        if (strcmp(p, "VTE_CURSOR_BLINK_OFF") == 0)
-            cursor_blink_mode = VTE_CURSOR_BLINK_OFF;
-
-        g_free(p);
-    }
-
-    p = g_key_file_get_string(ini, "Options", "cursor_shape", NULL);
-    if (p != NULL)
-    {
-        if (strcmp(p, "VTE_CURSOR_SHAPE_BLOCK") == 0)
-            cursor_shape = VTE_CURSOR_SHAPE_BLOCK;
-        if (strcmp(p, "VTE_CURSOR_SHAPE_IBEAM") == 0)
-            cursor_shape = VTE_CURSOR_SHAPE_IBEAM;
-        if (strcmp(p, "VTE_CURSOR_SHAPE_UNDERLINE") == 0)
-            cursor_shape = VTE_CURSOR_SHAPE_UNDERLINE;
-
-        g_free(p);
-    }
-
-    p = g_key_file_get_string(ini, "Colors", "foreground", NULL);
-    if (p != NULL)
-        c_foreground = p;
-
-    p = g_key_file_get_string(ini, "Colors", "background", NULL);
-    if (p != NULL)
-        c_background = p;
-
-    for (i = 0; i < sizeof c_nullable / sizeof c_nullable[0]; i++)
-    {
-        p = g_key_file_get_string(ini, "Colors", c_nullable[i].name, NULL);
-        if (p != NULL)
+        err = NULL;
+        switch (config[i].t)
         {
-            if (strcmp(p, "NULL") == 0)
-            {
-                c_nullable[i].value = NULL;
-                g_free(p);
-            }
-            else
-                c_nullable[i].value = p;
-        }
-    }
-
-    for (i = 0; i < sizeof c_palette / sizeof c_palette[0]; i++)
-    {
-        p = g_key_file_get_string(ini, "Colors", c_palette[i].name, NULL);
-        if (p != NULL)
-           c_palette[i].value = p;
-    }
-
-    err = NULL;
-    int64 = g_key_file_get_int64(ini, "Keys", "button_link", &err);
-    if (err == NULL)
-        button_link = int64;
-
-    for (i = 0; i < sizeof named_keys / sizeof named_keys[0]; i++)
-    {
-        p = g_key_file_get_string(ini, "Keys", named_keys[i].name, NULL);
-        if (p != NULL)
-        {
-            uint = gdk_keyval_from_name(p);
-            if (uint != GDK_KEY_VoidSymbol)
-                named_keys[i].value = uint;
-            g_free(p);
+            case STRING:
+                p = g_key_file_get_string(ini, config[i].s, config[i].n, &err);
+                if (p != NULL)
+                {
+                    if (strcmp(p, "NULL") == 0)
+                    {
+                        config[i].v.s = NULL;
+                        g_free(p);
+                    }
+                    else
+                        config[i].v.s = p;
+                }
+                break;
+            case STRINGLIST:
+                lst = g_key_file_get_string_list(ini, config[i].s, config[i].n, &len, &err);
+                if (lst != NULL)
+                {
+                    config[i].v.sl = lst;
+                    config[i].l = len;
+                }
+                break;
+            case BOOLEAN:
+                ret = g_key_file_get_boolean(ini, config[i].s, config[i].n, &err);
+                if (err == NULL)
+                    config[i].v.b = ret;
+                break;
+            case INT64:
+                int64 = g_key_file_get_int64(ini, config[i].s, config[i].n, &err);
+                if (err == NULL)
+                    config[i].v.i = int64;
+                break;
+            case UINT64:
+                uint64 = g_key_file_get_int64(ini, config[i].s, config[i].n, &err);
+                if (err == NULL)
+                    config[i].v.i = uint64;
+                break;
         }
     }
 
@@ -309,16 +281,18 @@ gboolean
 sig_button_press(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
     char *url = NULL;
-    char *argv[] = { link_handler, NULL, NULL, NULL };
+    char *argv[] = { NULL, NULL, NULL, NULL };
     GError *err = NULL;
     gboolean retval = FALSE;
     GSpawnFlags spawn_flags = G_SPAWN_DEFAULT | G_SPAWN_SEARCH_PATH;
+
+    argv[0] = cfg("Options", "link_handler")->v.s;
 
     (void)data;
 
     if (event->type == GDK_BUTTON_PRESS)
     {
-        if (((GdkEventButton *)event)->button == button_link)
+        if (((GdkEventButton *)event)->button == cfg("Controls", "button_link")->v.i)
         {
             if ((url = vte_terminal_hyperlink_check_event(VTE_TERMINAL(widget),
                                                           event)) != NULL)
@@ -362,7 +336,7 @@ sig_child_exited(VteTerminal *term, gint status, gpointer data)
 
     if (t->hold)
     {
-        gdk_rgba_parse(&c_background_gdk, c_background);
+        gdk_rgba_parse(&c_background_gdk, cfg("Colors", "background")->v.s);
         vte_terminal_set_color_cursor(term, &c_background_gdk);
         gtk_window_set_title(GTK_WINDOW(t->win), __NAME__" - CHILD HAS QUIT");
     }
@@ -393,48 +367,48 @@ sig_key_press(GtkWidget *widget, GdkEvent *event, gpointer data)
     if (((GdkEventKey *)event)->state & GDK_CONTROL_MASK)
     {
         kv = ((GdkEventKey *)event)->keyval;
-        if (kv == get_named_key("key_copy_to_clipboard"))
+        if (kv == get_keyval("key_copy_to_clipboard"))
         {
             vte_terminal_copy_clipboard_format(term, VTE_FORMAT_TEXT);
             return TRUE;
         }
-        if (kv == get_named_key("key_paste_from_clipboard"))
+        if (kv == get_keyval("key_paste_from_clipboard"))
         {
             vte_terminal_paste_clipboard(term);
             return TRUE;
         }
-        if (kv == get_named_key("key_handle_history"))
+        if (kv == get_keyval("key_handle_history"))
         {
             handle_history(term);
             return TRUE;
         }
-        if (kv == get_named_key("key_next_font"))
+        if (kv == get_keyval("key_next_font"))
         {
             t->current_font++;
-            t->current_font %= fonts_len;
+            t->current_font %= cfg("Options", "fonts")->l;
             term_activate_current_font(t, TRUE);
             return TRUE;
         }
-        if (kv == get_named_key("key_previous_font"))
+        if (kv == get_keyval("key_previous_font"))
         {
             if (t->current_font == 0)
-                t->current_font = fonts_len - 1;
+                t->current_font = cfg("Options", "fonts")->l - 1;
             else
                 t->current_font--;
             term_activate_current_font(t, TRUE);
             return TRUE;
         }
-        if (kv == get_named_key("key_zoom_in"))
+        if (kv == get_keyval("key_zoom_in"))
         {
             term_change_font_scale(t, 1);
             return TRUE;
         }
-        if (kv == get_named_key("key_zoom_out"))
+        if (kv == get_keyval("key_zoom_out"))
         {
             term_change_font_scale(t, -1);
             return TRUE;
         }
-        if (kv == get_named_key("key_zoom_reset"))
+        if (kv == get_keyval("key_zoom_reset"))
         {
             term_change_font_scale(t, 0);
             return TRUE;
@@ -503,6 +477,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     static char *args_default[] = { NULL, NULL, NULL };
     char **argv_cmdline = NULL, **args_use;
     char *title = __NAME__, *wm_class = __NAME_CAPITALIZED__, *wm_name = __NAME__;
+    char *link_regex;
     int i;
     GdkRGBA c_foreground_gdk;
     GdkRGBA c_background_gdk;
@@ -511,6 +486,12 @@ term_new(struct Terminal *t, int argc, char **argv)
     VteRegex *url_vregex = NULL;
     GError *err = NULL;
     GSpawnFlags spawn_flags;
+    char *standard16order[] = {
+        "dark_black",    "dark_red",        "dark_green",    "dark_yellow",
+        "dark_blue",     "dark_magenta",    "dark_cyan",     "dark_white",
+        "bright_black",  "bright_red",      "bright_green",  "bright_yellow",
+        "bright_blue",   "bright_magenta",  "bright_cyan",   "bright_white",
+    };
 
     /* Handle arguments. */
     t->current_font = 0;
@@ -551,44 +532,45 @@ term_new(struct Terminal *t, int argc, char **argv)
     term_activate_current_font(t, FALSE);
     gtk_widget_show_all(t->win);
 
-    vte_terminal_set_bold_is_bright(VTE_TERMINAL(t->term), bold_is_bright);
-    vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(t->term), cursor_blink_mode);
-    vte_terminal_set_cursor_shape(VTE_TERMINAL(t->term), cursor_shape);
+    vte_terminal_set_bold_is_bright(VTE_TERMINAL(t->term), cfg("Options", "bold_is_bright")->v.b);
+    vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(t->term), get_cursor_blink_mode());
+    vte_terminal_set_cursor_shape(VTE_TERMINAL(t->term), get_cursor_shape());
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(t->term), TRUE);
-    vte_terminal_set_scrollback_lines(VTE_TERMINAL(t->term), scrollback_lines);
+    vte_terminal_set_scrollback_lines(VTE_TERMINAL(t->term), (glong)cfg("Options", "scrollback_lines")->v.ui);
     vte_terminal_set_allow_hyperlink(VTE_TERMINAL(t->term), TRUE);
 
-    gdk_rgba_parse(&c_foreground_gdk, c_foreground);
-    gdk_rgba_parse(&c_background_gdk, c_background);
+    gdk_rgba_parse(&c_foreground_gdk, cfg("Colors", "foreground")->v.s);
+    gdk_rgba_parse(&c_background_gdk, cfg("Colors", "background")->v.s);
     for (i = 0; i < 16; i++)
-        gdk_rgba_parse(&c_palette_gdk[i], c_palette[i].value);
+        gdk_rgba_parse(&c_palette_gdk[i], cfg("Colors", standard16order[i])->v.s);
     vte_terminal_set_colors(VTE_TERMINAL(t->term), &c_foreground_gdk,
                             &c_background_gdk, c_palette_gdk, 16);
 
-    if (get_named_nullable_color("bold") != NULL)
+    if (cfg("Colors", "bold")->v.s != NULL)
     {
-        gdk_rgba_parse(&c_gdk, get_named_nullable_color("bold"));
+        gdk_rgba_parse(&c_gdk, cfg("Colors", "bold")->v.s);
         vte_terminal_set_color_bold(VTE_TERMINAL(t->term), &c_gdk);
     }
     else
         vte_terminal_set_color_bold(VTE_TERMINAL(t->term), NULL);
 
-    if (get_named_nullable_color("cursor") != NULL)
+    if (cfg("Colors", "cursor")->v.s != NULL)
     {
-        gdk_rgba_parse(&c_gdk, get_named_nullable_color("cursor"));
+        gdk_rgba_parse(&c_gdk, cfg("Colors", "cursor")->v.s);
         vte_terminal_set_color_cursor(VTE_TERMINAL(t->term), &c_gdk);
     }
     else
         vte_terminal_set_color_cursor(VTE_TERMINAL(t->term), NULL);
 
-    if (get_named_nullable_color("cursor_foreground") != NULL)
+    if (cfg("Colors", "cursor_foreground")->v.s != NULL)
     {
-        gdk_rgba_parse(&c_gdk, get_named_nullable_color("cursor_foreground"));
+        gdk_rgba_parse(&c_gdk, cfg("Colors", "cursor_foreground")->v.s);
         vte_terminal_set_color_cursor_foreground(VTE_TERMINAL(t->term), &c_gdk);
     }
     else
         vte_terminal_set_color_cursor_foreground(VTE_TERMINAL(t->term), NULL);
 
+    link_regex = cfg("Options", "link_regex")->v.s;
     url_vregex = vte_regex_new_for_match(link_regex, strlen(link_regex),
                                          PCRE2_MULTILINE | PCRE2_CASELESS, &err);
     if (url_vregex == NULL)
@@ -631,7 +613,7 @@ term_new(struct Terminal *t, int argc, char **argv)
             args_default[0] = vte_get_user_shell();
             if (args_default[0] == NULL)
                 args_default[0] = "/bin/sh";
-            if (login_shell)
+            if (cfg("Options", "login_shell")->v.b)
                 args_default[1] = g_strdup_printf("-%s", args_default[0]);
             else
                 args_default[1] = args_default[0];
@@ -651,7 +633,7 @@ term_activate_current_font(struct Terminal *t, gboolean win_ready)
     PangoFontDescription *font_desc = NULL;
     glong width, height;
 
-    if (t->current_font >= fonts_len)
+    if (t->current_font >= cfg("Options", "fonts")->l)
     {
         fprintf(stderr, __NAME__": Warning: Invalid font index\n");
         return;
@@ -660,7 +642,9 @@ term_activate_current_font(struct Terminal *t, gboolean win_ready)
     width = vte_terminal_get_column_count(VTE_TERMINAL(t->term));
     height = vte_terminal_get_row_count(VTE_TERMINAL(t->term));
 
-    font_desc = pango_font_description_from_string(fonts_real[t->current_font]);
+    font_desc = pango_font_description_from_string(
+        cfg("Options", "fonts")->v.sl[t->current_font]
+    );
     vte_terminal_set_font(VTE_TERMINAL(t->term), font_desc);
     pango_font_description_free(font_desc);
     vte_terminal_set_font_scale(VTE_TERMINAL(t->term), 1);
