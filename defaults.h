@@ -9,12 +9,14 @@ char *link_handler = "xiate-link-handler";
 char *history_handler = "xiate-history-handler";
 VteCursorBlinkMode cursor_blink_mode = VTE_CURSOR_BLINK_OFF;
 VteCursorShape cursor_shape = VTE_CURSOR_SHAPE_BLOCK;
-char *c_cursor = "#00FF00";
-char *c_cursor_foreground = "#000000";
-char *c_bold = NULL;
 char *c_foreground = "#AAAAAA";
 char *c_background = "#000000";
-struct NamedColor named_colors[] = {
+struct NamedColor c_nullable[] = {
+    { .name = "cursor",             .value = "#00FF00" },
+    { .name = "cursor_foreground",  .value = "#000000" },
+    { .name = "bold",               .value = NULL      },
+};
+struct NamedColor c_palette[] = {
     /* Order must match standard 16 color order. */
     { .name = "dark_black",      .value = "#000000" },
     { .name = "dark_red",        .value = "#AA0000" },

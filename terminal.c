@@ -38,6 +38,7 @@ struct Terminal
 
 
 void cb_spawn_async(VteTerminal *, GPid, GError *, gpointer);
+char *get_named_nullable_color(char *);
 guint get_named_key(char *);
 void handle_history(VteTerminal *);
 gboolean ini_load(void);
@@ -68,6 +69,19 @@ cb_spawn_async(VteTerminal *term, GPid pid, GError *err, gpointer data)
         fprintf(stderr, __NAME__": Spawning child failed: %s\n", err->message);
         gtk_widget_destroy(t->win);
     }
+}
+
+char *
+get_named_nullable_color(char *name)
+{
+    size_t i;
+
+    for (i = 0; i < sizeof c_nullable / sizeof c_nullable[0]; i++)
+        if (strcmp(c_nullable[i].name, name) == 0)
+            return c_nullable[i].value;
+
+    fprintf(stderr, __NAME__": Did not find named nullable color '%s'\n", name);
+    return NULL;
 }
 
 guint
@@ -219,42 +233,6 @@ ini_load(void)
         g_free(p);
     }
 
-    p = g_key_file_get_string(ini, "Colors", "cursor", NULL);
-    if (p != NULL)
-    {
-        if (strcmp(p, "NULL") == 0)
-        {
-            c_cursor = NULL;
-            g_free(p);
-        }
-        else
-            c_cursor = p;
-    }
-
-    p = g_key_file_get_string(ini, "Colors", "cursor_foreground", NULL);
-    if (p != NULL)
-    {
-        if (strcmp(p, "NULL") == 0)
-        {
-            c_cursor_foreground = NULL;
-            g_free(p);
-        }
-        else
-            c_cursor_foreground = p;
-    }
-
-    p = g_key_file_get_string(ini, "Colors", "bold", NULL);
-    if (p != NULL)
-    {
-        if (strcmp(p, "NULL") == 0)
-        {
-            c_bold = NULL;
-            g_free(p);
-        }
-        else
-            c_bold = p;
-    }
-
     p = g_key_file_get_string(ini, "Colors", "foreground", NULL);
     if (p != NULL)
         c_foreground = p;
@@ -263,11 +241,26 @@ ini_load(void)
     if (p != NULL)
         c_background = p;
 
-    for (i = 0; i < sizeof named_colors / sizeof named_colors[0]; i++)
+    for (i = 0; i < sizeof c_nullable / sizeof c_nullable[0]; i++)
     {
-        p = g_key_file_get_string(ini, "Colors", named_colors[i].name, NULL);
+        p = g_key_file_get_string(ini, "Colors", c_nullable[i].name, NULL);
         if (p != NULL)
-           named_colors[i].value = p;
+        {
+            if (strcmp(p, "NULL") == 0)
+            {
+                c_nullable[i].value = NULL;
+                g_free(p);
+            }
+            else
+                c_nullable[i].value = p;
+        }
+    }
+
+    for (i = 0; i < sizeof c_palette / sizeof c_palette[0]; i++)
+    {
+        p = g_key_file_get_string(ini, "Colors", c_palette[i].name, NULL);
+        if (p != NULL)
+           c_palette[i].value = p;
     }
 
     err = NULL;
@@ -568,27 +561,33 @@ term_new(struct Terminal *t, int argc, char **argv)
     gdk_rgba_parse(&c_foreground_gdk, c_foreground);
     gdk_rgba_parse(&c_background_gdk, c_background);
     for (i = 0; i < 16; i++)
-        gdk_rgba_parse(&c_palette_gdk[i], named_colors[i].value);
+        gdk_rgba_parse(&c_palette_gdk[i], c_palette[i].value);
     vte_terminal_set_colors(VTE_TERMINAL(t->term), &c_foreground_gdk,
                             &c_background_gdk, c_palette_gdk, 16);
 
-    if (c_bold != NULL)
+    if (get_named_nullable_color("bold") != NULL)
     {
-        gdk_rgba_parse(&c_gdk, c_bold);
+        gdk_rgba_parse(&c_gdk, get_named_nullable_color("bold"));
         vte_terminal_set_color_bold(VTE_TERMINAL(t->term), &c_gdk);
     }
+    else
+        vte_terminal_set_color_bold(VTE_TERMINAL(t->term), NULL);
 
-    if (c_cursor != NULL)
+    if (get_named_nullable_color("cursor") != NULL)
     {
-        gdk_rgba_parse(&c_gdk, c_cursor);
+        gdk_rgba_parse(&c_gdk, get_named_nullable_color("cursor"));
         vte_terminal_set_color_cursor(VTE_TERMINAL(t->term), &c_gdk);
     }
+    else
+        vte_terminal_set_color_cursor(VTE_TERMINAL(t->term), NULL);
 
-    if (c_cursor_foreground != NULL)
+    if (get_named_nullable_color("cursor_foreground") != NULL)
     {
-        gdk_rgba_parse(&c_gdk, c_cursor_foreground);
+        gdk_rgba_parse(&c_gdk, get_named_nullable_color("cursor_foreground"));
         vte_terminal_set_color_cursor_foreground(VTE_TERMINAL(t->term), &c_gdk);
     }
+    else
+        vte_terminal_set_color_cursor_foreground(VTE_TERMINAL(t->term), NULL);
 
     url_vregex = vte_regex_new_for_match(link_regex, strlen(link_regex),
                                          PCRE2_MULTILINE | PCRE2_CASELESS, &err);
