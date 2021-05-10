@@ -253,10 +253,10 @@ ini_load(void)
                     config[i].v.i = int64;
                 break;
             case UINT64:
-                uint64 = g_key_file_get_int64(ini, config[i].s, config[i].n,
-                                              &err);
+                uint64 = g_key_file_get_uint64(ini, config[i].s, config[i].n,
+                                               &err);
                 if (err == NULL)
-                    config[i].v.i = uint64;
+                    config[i].v.ui = uint64;
                 break;
         }
     }
@@ -301,7 +301,7 @@ sig_button_press(GtkWidget *widget, GdkEvent *event, gpointer data)
 
     if (event->type == GDK_BUTTON_PRESS)
     {
-        if (((GdkEventButton *)event)->button == cfg("Controls", "button_link")->v.i)
+        if (((GdkEventButton *)event)->button == cfg("Controls", "button_link")->v.ui)
         {
             if ((url = vte_terminal_hyperlink_check_event(VTE_TERMINAL(widget),
                                                           event)) != NULL)
@@ -549,7 +549,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(t->term), TRUE);
     vte_terminal_set_scrollback_lines(VTE_TERMINAL(t->term),
                                       (glong)cfg("Options",
-                                                 "scrollback_lines")->v.ui);
+                                                 "scrollback_lines")->v.i);
     vte_terminal_set_allow_hyperlink(VTE_TERMINAL(t->term), TRUE);
 
     gdk_rgba_parse(&c_foreground_gdk, cfg("Colors", "foreground")->v.s);

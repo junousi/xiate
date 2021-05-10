@@ -33,7 +33,7 @@ struct ConfigItem config[] = {
     { .s = "Colors",  .n = "bright_cyan",     .t = STRING,  .v.s = "#55FFFF" },
     { .s = "Colors",  .n = "bright_white",    .t = STRING,  .v.s = "#FFFFFF" },
 
-    { .s = "Controls",  .n = "button_link",               .t = UINT64,  .v.i = 3 },
+    { .s = "Controls",  .n = "button_link",               .t = UINT64,  .v.ui = 3  },
     { .s = "Controls",  .n = "key_copy_to_clipboard",     .t = STRING,  .v.s = "C" },
     { .s = "Controls",  .n = "key_paste_from_clipboard",  .t = STRING,  .v.s = "V" },
     { .s = "Controls",  .n = "key_handle_history",        .t = STRING,  .v.s = "H" },
