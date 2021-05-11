@@ -53,7 +53,7 @@ VteCursorBlinkMode get_cursor_blink_mode(void);
 VteCursorShape get_cursor_shape(void);
 guint get_keyval(char *);
 void handle_history(VteTerminal *);
-gboolean ini_load(void);
+gboolean ini_load(char *);
 char *safe_emsg(GError *);
 void sig_bell(VteTerminal *, gpointer);
 gboolean sig_button_press(GtkWidget *, GdkEvent *, gpointer);
@@ -186,7 +186,7 @@ free_and_out:
 }
 
 gboolean
-ini_load(void)
+ini_load(char *config_file)
 {
     GKeyFile *ini = NULL;
     GError *err;
@@ -198,10 +198,18 @@ ini_load(void)
     gsize len;
     size_t i;
 
-    p = g_build_filename(g_get_user_config_dir(), __NAME__, "config.ini", NULL);
+    if (config_file == NULL)
+        p = g_build_filename(g_get_user_config_dir(), __NAME__, "config.ini",
+                             NULL);
+    else
+        p = g_strdup(config_file);
+
     if (!g_file_test(p, G_FILE_TEST_EXISTS))
+    {
         /* No config, welp, doesn't matter, use our defaults. */
+        g_free(p);
         return TRUE;
+    }
 
     ini = g_key_file_new();
     if (!g_key_file_load_from_file(ini, p, G_KEY_FILE_NONE, NULL))
@@ -514,6 +522,8 @@ term_new(struct Terminal *t, int argc, char **argv)
             wm_name = argv[++i];
         else if (strcmp(argv[i], "-title") == 0 && i < argc - 1)
             title = argv[++i];
+        else if (strcmp(argv[i], "--config") == 0 && i < argc - 1)
+            i++;  /* ignore here */
         else if (strcmp(argv[i], "--fontindex") == 0 && i < argc - 1)
             t->current_font = atoi(argv[++i]);
         else if (strcmp(argv[i], "-e") == 0 && i < argc - 1)
@@ -711,10 +721,18 @@ int
 main(int argc, char **argv)
 {
     struct Terminal t = {0};
+    int i;
+    char *config_file = NULL;
 
     gtk_init(&argc, &argv);
 
-    if (!ini_load())
+    for (i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "--config") == 0 && i < argc - 1)
+            config_file = argv[++i];
+    }
+
+    if (!ini_load(config_file))
         return 1;
 
     term_new(&t, argc, argv);
