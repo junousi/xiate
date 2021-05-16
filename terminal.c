@@ -53,7 +53,7 @@ VteCursorBlinkMode get_cursor_blink_mode(void);
 VteCursorShape get_cursor_shape(void);
 guint get_keyval(char *);
 void handle_history(VteTerminal *);
-gboolean ini_load(char *);
+void ini_load(char *);
 char *safe_emsg(GError *);
 void sig_bell(VteTerminal *, gpointer);
 gboolean sig_button_press(GtkWidget *, GdkEvent *, gpointer);
@@ -185,7 +185,7 @@ free_and_out:
     g_clear_error(&err);
 }
 
-gboolean
+void
 ini_load(char *config_file)
 {
     GKeyFile *ini = NULL;
@@ -208,7 +208,7 @@ ini_load(char *config_file)
     {
         /* No config, welp, doesn't matter, use our defaults. */
         g_free(p);
-        return TRUE;
+        return;
     }
 
     ini = g_key_file_new();
@@ -216,7 +216,7 @@ ini_load(char *config_file)
     {
         fprintf(stderr, __NAME__": %s could not be loaded\n", p);
         g_free(p);
-        return FALSE;
+        return;
     }
 
     g_free(p);
@@ -268,8 +268,6 @@ ini_load(char *config_file)
                 break;
         }
     }
-
-    return TRUE;
 }
 
 char *
@@ -493,6 +491,7 @@ term_new(struct Terminal *t, int argc, char **argv)
 {
     static char *args_default[] = { NULL, NULL, NULL };
     char **argv_cmdline = NULL, **args_use;
+    char *config_file = NULL;
     char *title = __NAME__, *wm_class = __NAME_CAPITALIZED__, *wm_name = __NAME__;
     char *link_regex;
     int i;
@@ -523,7 +522,7 @@ term_new(struct Terminal *t, int argc, char **argv)
         else if (strcmp(argv[i], "-title") == 0 && i < argc - 1)
             title = argv[++i];
         else if (strcmp(argv[i], "--config") == 0 && i < argc - 1)
-            i++;  /* ignore here */
+            config_file = argv[++i];
         else if (strcmp(argv[i], "--fontindex") == 0 && i < argc - 1)
             t->current_font = atoi(argv[++i]);
         else if (strcmp(argv[i], "-e") == 0 && i < argc - 1)
@@ -537,6 +536,8 @@ term_new(struct Terminal *t, int argc, char **argv)
             exit(EXIT_FAILURE);
         }
     }
+
+    ini_load(config_file);
 
     /* Create GTK+ widgets. */
     t->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -721,20 +722,8 @@ int
 main(int argc, char **argv)
 {
     struct Terminal t = {0};
-    int i;
-    char *config_file = NULL;
 
     gtk_init(&argc, &argv);
-
-    for (i = 1; i < argc; i++)
-    {
-        if (strcmp(argv[i], "--config") == 0 && i < argc - 1)
-            config_file = argv[++i];
-    }
-
-    if (!ini_load(config_file))
-        return 1;
-
     term_new(&t, argc, argv);
     gtk_main();
 }
