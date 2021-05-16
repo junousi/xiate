@@ -204,17 +204,14 @@ ini_load(char *config_file)
     else
         p = g_strdup(config_file);
 
-    if (!g_file_test(p, G_FILE_TEST_EXISTS))
-    {
-        /* No config, welp, doesn't matter, use our defaults. */
-        g_free(p);
-        return;
-    }
-
     ini = g_key_file_new();
     if (!g_key_file_load_from_file(ini, p, G_KEY_FILE_NONE, NULL))
     {
-        fprintf(stderr, __NAME__": %s could not be loaded\n", p);
+        /* Only warn if we *should have* read a config file. That's the
+         * case when the user requested a specific config or when the
+         * user uses the default path but that file is corrupt. */
+        if (config_file != NULL || g_file_test(p, G_FILE_TEST_EXISTS))
+            fprintf(stderr, __NAME__": Config '%s' could not be loaded\n", p);
         g_free(p);
         return;
     }
