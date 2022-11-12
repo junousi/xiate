@@ -553,7 +553,7 @@ term_new(struct Terminal *t, int argc, char **argv)
      *   Examples of commonly used class names include: "Emacs",
      *   "XTerm", "XClock", "XLoad", and so on.
      *
-     * https://tronche.com/gui/x/icccm/sec-4.html#WM_CLASS
+     * https://www.x.org/releases/current/doc/xorg-docs/icccm/icccm.html#WM_CLASS_Property
      *
      * So, for example, res_class = "XTerm", res_name = "audio-player":
      * An XTerm that runs an audio player. You might then create a rule
@@ -572,7 +572,7 @@ term_new(struct Terminal *t, int argc, char **argv)
      * historically (although not in xiate), res_name and res_class were
      * used in the X resource database where a dot has a special
      * meaning, so it shouldn't be used in res_name or res_class anyway.
-     * (https://tronche.com/gui/x/xlib/resource-manager/file-syntax.html)
+     * (https://www.x.org/releases/current/doc/libX11/libX11/libX11.html#Resource_File_Syntax)
      *
      * In the WM_CLASS property, res_name comes first and res_class
      * second. In my opinion, that's confusing, because res_class is
