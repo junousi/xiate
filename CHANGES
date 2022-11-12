@@ -1,5 +1,10 @@
 Release history for xiate
 
+next
+  [Added]
+  - We set the Wayland "app_id" now by combining "res_name" and
+    "res_class" of "WM_CLASS" into "{res_name}.{res_class}".
+
 v21.05  2021-05-29
   [Changed]
   - "config.h" is gone. Instead, you can now place a "config.ini" in the

@@ -489,8 +489,8 @@ term_new(struct Terminal *t, int argc, char **argv)
     static char *args_default[] = { NULL, NULL, NULL };
     char **argv_cmdline = NULL, **args_use;
     char *config_file = NULL;
-    char *title = __NAME__, *wm_class = __NAME_CAPITALIZED__, *wm_name = __NAME__;
-    char *link_regex;
+    char *title = __NAME__, *res_class = __NAME_CAPITALIZED__, *res_name = __NAME__;
+    char *app_id, *link_regex;
     int i;
     GdkRGBA c_foreground_gdk;
     GdkRGBA c_background_gdk;
@@ -511,11 +511,11 @@ term_new(struct Terminal *t, int argc, char **argv)
     for (i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-class") == 0 && i < argc - 1)
-            wm_class = argv[++i];
+            res_class = argv[++i];
         else if (strcmp(argv[i], "-hold") == 0)
             t->hold = TRUE;
         else if (strcmp(argv[i], "-name") == 0 && i < argc - 1)
-            wm_name = argv[++i];
+            res_name = argv[++i];
         else if (strcmp(argv[i], "-title") == 0 && i < argc - 1)
             title = argv[++i];
         else if (strcmp(argv[i], "--config") == 0 && i < argc - 1)
@@ -539,8 +539,48 @@ term_new(struct Terminal *t, int argc, char **argv)
     /* Create GTK+ widgets. */
     t->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(t->win), title);
-    gtk_window_set_wmclass(GTK_WINDOW(t->win), wm_name, wm_class);
+    gtk_window_set_wmclass(GTK_WINDOW(t->win), res_name, res_class);
     g_signal_connect(G_OBJECT(t->win), "destroy", G_CALLBACK(sig_window_destroy), t);
+
+    /* Wayland only has "app_id", so we need to decide whether we put
+     * res_class there or res_name. This is what ICCCM says:
+     *
+     *   res_name: A string that names the particular instance of the
+     *   application to which the client that owns this window belongs.
+     *
+     *   res_class: A string that names the general class of
+     *   applications to which the client that owns this window belongs.
+     *   Examples of commonly used class names include: "Emacs",
+     *   "XTerm", "XClock", "XLoad", and so on.
+     *
+     * https://tronche.com/gui/x/icccm/sec-4.html#WM_CLASS
+     *
+     * So, for example, res_class = "XTerm", res_name = "audio-player":
+     * An XTerm that runs an audio player. You might then create a rule
+     * in your window manager that specifies to put all of those windows
+     * on workspace number 3, for example.
+     *
+     * By dropping either of those, Wayland is reducing functionality.
+     * Drop res_name and you can no longer distinguish between different
+     * XTerms. Drop res_class and suddenly all "audio-players" are
+     * treated the same, whether they're running in an XTerm or not.
+     *
+     * I think the best solution is to combine both res_class and
+     * res_name into app_id. That's 99% backwards compatible. These two
+     * strings are NUL-terminated strings, so we need to pick some
+     * delimiter when combining them. I picked a dot, because,
+     * historically (although not in xiate), res_name and res_class were
+     * used in the X resource database where a dot has a special
+     * meaning, so it shouldn't be used in res_name or res_class anyway.
+     * (https://tronche.com/gui/x/xlib/resource-manager/file-syntax.html)
+     *
+     * In the WM_CLASS property, res_name comes first and res_class
+     * second. In my opinion, that's confusing, because res_class is
+     * "more top-level" than res_name. Still, in an effort to not
+     * irritate users, we keep this order. */
+    app_id = g_strdup_printf("%s.%s", res_name, res_class);
+    g_set_prgname(app_id);
+    g_free(app_id);
 
     t->term = vte_terminal_new();
     gtk_container_add(GTK_CONTAINER(t->win), t->term);
