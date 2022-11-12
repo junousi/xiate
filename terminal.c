@@ -560,10 +560,11 @@ term_new(struct Terminal *t, int argc, char **argv)
      * in your window manager that specifies to put all of those windows
      * on workspace number 3, for example.
      *
-     * By dropping either of those, Wayland is reducing functionality.
-     * Drop res_name and you can no longer distinguish between different
-     * XTerms. Drop res_class and suddenly all "audio-players" are
-     * treated the same, whether they're running in an XTerm or not.
+     * If we simply were to drop one of those, we'd be losing
+     * functionality. Drop res_name and you can no longer distinguish
+     * between different XTerms. Drop res_class and suddenly all
+     * "audio-players" are treated the same, whether they're running in
+     * an XTerm or not.
      *
      * I think the best solution is to combine both res_class and
      * res_name into app_id. That's 99% backwards compatible. These two
