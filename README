@@ -28,7 +28,9 @@ The following C libraries (or newer versions) are required:
 
 Older versions might work, too, but they are not tested.
 
-xiate expects to be run on a POSIX-ish operating system.
+xiate was written on GNU (Arch Linux). No portability tests are run by
+the author, but the code tries to stick to POSIX and will probably work
+on other systems as well.
 
 To build the program and install it to /usr/local:
 
