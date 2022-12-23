@@ -1,6 +1,6 @@
 Release history for xiate
 
-next
+v22.12  2022-12-23
   [Added]
   - We set the Wayland "app_id" now by combining "res_name" and
     "res_class" of "WM_CLASS" into "{res_name}.{res_class}".
