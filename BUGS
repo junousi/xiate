@@ -1,26 +1,3 @@
-VTE bugs
-========
-
-xiate uses VTE as a backend. From time to time, there are bugs in that
-library. Such as:
-
-    Terminal hangs on close if forked processes are still running
-
-        https://gitlab.gnome.org/GNOME/vte/-/issues/204
-
-        When children exit, VTE also wants to see an EOF on the FDs that
-        it holds open for these children. This can be delayed for a very
-        long time if *grandchildren* inherited those FDs and keep them
-        open. To avoid very long delays, VTE waits at most two seconds.
-
-        One way to avoid this hang is to close stdin, stdout, and stderr
-        in forked children before doing exec(). For example, when piping
-        something from Vim to xclip, do this (stdin is not connected to
-        the terminal here anyway):
-
-            :%w !xclip -selection clipboard >/dev/null 2>&1
-
-
 Setting WM_CLASS is deprecated in GTK
 =====================================
 
