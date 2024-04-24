@@ -57,6 +57,7 @@ void ini_load(char *);
 char *safe_emsg(GError *);
 void sig_bell(VteTerminal *, gpointer);
 gboolean sig_button_press(GtkWidget *, GdkEvent *, gpointer);
+void sig_char_size_changed(VteTerminal *, guint, guint, gpointer);
 void sig_child_exited(VteTerminal *, gint, gpointer);
 void sig_hyperlink_changed(VteTerminal *, gchar *, GdkRectangle *, gpointer);
 gboolean sig_key_press(GtkWidget *, GdkEvent *, gpointer);
@@ -66,6 +67,7 @@ void sig_window_title_changed(VteTerminal *, gpointer);
 void term_new(struct Terminal *, int, char **);
 void term_activate_current_font(struct Terminal *, gboolean);
 void term_change_font_scale(struct Terminal *, gint);
+void term_set_geometry_hints(struct Terminal *);
 void term_set_size(struct Terminal *t, glong, glong, gboolean);
 
 
@@ -382,6 +384,18 @@ sig_button_press(GtkWidget *widget, GdkEvent *event, gpointer data)
 }
 
 void
+sig_char_size_changed(VteTerminal *term, guint width, guint height, gpointer data)
+{
+    struct Terminal *t = (struct Terminal *)data;
+
+    (void)term;
+    (void)width;
+    (void)height;
+
+    term_set_geometry_hints(t);
+}
+
+void
 sig_child_exited(VteTerminal *term, gint status, gpointer data)
 {
     struct Terminal *t = (struct Terminal *)data;
@@ -633,6 +647,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     /* Appearance. */
     term_activate_current_font(t, FALSE);
     gtk_widget_show_all(t->win);
+    term_set_geometry_hints(t);
 
     vte_terminal_set_bold_is_bright(VTE_TERMINAL(t->term),
                                     cfg("Options", "bold_is_bright")->v.b);
@@ -695,6 +710,8 @@ term_new(struct Terminal *t, int argc, char **argv)
                      G_CALLBACK(sig_bell), t);
     g_signal_connect(G_OBJECT(t->term), "button-press-event",
                      G_CALLBACK(sig_button_press), t);
+    g_signal_connect(G_OBJECT(t->term), "char-size-changed",
+                     G_CALLBACK(sig_char_size_changed), t);
     g_signal_connect(G_OBJECT(t->term), "child-exited",
                      G_CALLBACK(sig_child_exited), t);
     g_signal_connect(G_OBJECT(t->term), "hyperlink-hover-uri-changed",
@@ -776,6 +793,36 @@ term_change_font_scale(struct Terminal *t, gint direction)
         s = 1;
     vte_terminal_set_font_scale(VTE_TERMINAL(t->term), s);
     term_set_size(t, width, height, TRUE);
+}
+
+void
+term_set_geometry_hints(struct Terminal *t)
+{
+    GtkStyleContext *context;
+    GtkBorder padding;
+    GdkGeometry hints;
+    int min_columns = 16, min_rows = 2;  /* From VTE source. Arbitrary anyway. */
+    GdkWindowHints flags = GDK_HINT_RESIZE_INC |
+                           GDK_HINT_MIN_SIZE |
+                           GDK_HINT_BASE_SIZE;
+
+    /* The following is mostly copied from VTE's source code. I don't
+     * want use the VTE functions directly because they're deprecated in
+     * VTE and might vanish at some point. */
+
+    context = gtk_widget_get_style_context(t->term);
+    gtk_style_context_get_padding(context,
+                                  gtk_style_context_get_state(context),
+                                  &padding);
+
+    hints.base_width  = padding.left + padding.right;
+    hints.base_height = padding.top  + padding.bottom;
+    hints.width_inc   = vte_terminal_get_char_width(VTE_TERMINAL(t->term));
+    hints.height_inc  = vte_terminal_get_char_height(VTE_TERMINAL(t->term));
+    hints.min_width   = hints.base_width  + hints.width_inc  * min_columns;
+    hints.min_height  = hints.base_height + hints.height_inc * min_rows;
+
+    gtk_window_set_geometry_hints(GTK_WINDOW(t->win), NULL, &hints, flags);
 }
 
 void
