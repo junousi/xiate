@@ -9,6 +9,8 @@ struct ConfigItem config[] = {
     { .s = "Options",  .n = "cursor_blink_mode",  .t = STRING,      .v.s = "VTE_CURSOR_BLINK_OFF"              },
     { .s = "Options",  .n = "cursor_shape",       .t = STRING,      .v.s = "VTE_CURSOR_SHAPE_BLOCK"            },
 
+    { .s = "Options",  .n = "wayland_activate_on_bell", .t = BOOLEAN, .v.b = TRUE },
+
     { .s = "Colors",  .n = "foreground",         .t = STRING,  .v.s = "#AAAAAA" },
     { .s = "Colors",  .n = "background",         .t = STRING,  .v.s = "#000000" },
     { .s = "Colors",  .n = "cursor",             .t = STRING,  .v.s = "#00FF00" },

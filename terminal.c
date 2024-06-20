@@ -279,6 +279,7 @@ void
 sig_bell(VteTerminal *term, gpointer data)
 {
     struct Terminal *t = (struct Terminal *)data;
+    const char *dname;
 
     (void)term;
 
@@ -290,49 +291,26 @@ sig_bell(VteTerminal *term, gpointer data)
     gtk_window_set_urgency_hint(GTK_WINDOW(t->win), FALSE);
     gtk_window_set_urgency_hint(GTK_WINDOW(t->win), TRUE);
 
-    /* XXX
-     *
-     * On Wayland, this should trigger xdg_activation_v1 in GTK (Wayland
+    /* On Wayland, this should trigger xdg_activation_v1 in GTK (Wayland
      * has no concept of urgency hints, XDG activation is the next best
-     * thing). Sadly, this is not yet implemented for GTK3 (2022-11-13,
-     * GTK 3.24.34). For now, the call below simply has no effect (on
-     * Sway). If GTK3 decides to implement the protocol at some point in
-     * the future, we should get working urgency hints again on Sway.
+     * thing). It depends on your compositor, though: Some transfer the
+     * input focus to xiate, which is very undesirable. That's why this
+     * function is guarded behind a user option.
      *
-     * https://gitlab.gnome.org/GNOME/gtk/-/issues/4335
-     *
-     * It is unclear which effect this call will have on compositors
-     * other than Sway. The protocol is called "activation", not "wants
-     * activation" or "urgency hint". It is possible that other
-     * compositors might transfer input focus to our window -- which is
-     * precisely not what we want. Hence this should probably be turned
-     * into a config option.
-     *
-     * On X11, though, the call below certainly triggers focus stealing.
-     * We don't want that at all. If we need to check whether we're
-     * running on X11 or Wayland, we should probably check the result of
-     * this (this would be comparing strings, though, very flaky):
-     *
-     *   gdk_display_get_name(gdk_display_get_default())
-     *
-     * With GTK4, this would be just gtk_window_present(). Even with a
-     * GTK4 test program, though, I get this error in Sway's debug log:
-     *
-     *   00:03:16.880 [DEBUG] [wlr] [types/wlr_xdg_activation_v1.c:120] Rejecting token commit request: surface doesn't have keyboard focus
-     *   00:03:16.880 [DEBUG] [wlr] [types/wlr_xdg_activation_v1.c:296] Rejecting activate request: unknown token
-     *
-     * In the Gitlab issue above, someone commented something similar.
-     *
-     * xdg_activation_v1 works fine when the "foot" terminal is doing
-     * it, so it must be something related to GTK.
-     *
-     * Until things have settled, this is commented out. */
-    /*
-    gtk_window_present_with_time(
-        GTK_WINDOW(t->win),
-        gtk_get_current_event_time()
-    );
-    */
+     * On X11, though, the call below always triggers focus stealing.
+     * We don't want that at all, hence we try to only issue it on
+     * Wayland. */
+    if (cfg("Options", "wayland_activate_on_bell")->v.b)
+    {
+        dname = gdk_display_get_name(gdk_display_get_default());
+        if (strncmp(dname, "wayland-", 8) == 0)
+        {
+            gtk_window_present_with_time(
+                GTK_WINDOW(t->win),
+                gtk_get_current_event_time()
+            );
+        }
+    }
 }
 
 gboolean

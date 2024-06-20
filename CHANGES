@@ -1,5 +1,13 @@
 Release history for xiate
 
+next
+  [Fixed]
+  - Wayland: "Urgency hints" (which do not really exist conceptually in
+    Wayland -- yet) do work now on some compositors (tested in dwl and
+    Sway; only tested on wlroots 0.17). This introduces focus stealing
+    in some compositors, hence a new config option was introduced to
+    disable the new code.
+
 v24.04  2024-04-30
   [Changed]
   - Bring back geometry hints.
