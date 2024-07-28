@@ -1,6 +1,6 @@
 Release history for xiate
 
-next
+v24.07  2024-07-28
   [Fixed]
   - Wayland: "Urgency hints" (which do not really exist conceptually in
     Wayland -- yet) do work now on some compositors (tested in dwl and
