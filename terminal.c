@@ -10,6 +10,11 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
+#include <stdlib.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <errno.h>
+#include <arpa/inet.h>
 
 enum ConfigItemType {
     STRING,
@@ -61,6 +66,7 @@ void sig_char_size_changed(VteTerminal *, guint, guint, gpointer);
 void sig_child_exited(VteTerminal *, gint, gpointer);
 void sig_hyperlink_changed(VteTerminal *, gchar *, GdkRectangle *, gpointer);
 gboolean sig_key_press(GtkWidget *, GdkEvent *, gpointer);
+gboolean sig_motion_notify_event(GtkWidget *, GdkEventMotion *, gpointer);
 void sig_window_destroy(GtkWidget *, gpointer);
 void sig_window_resize(VteTerminal *, guint, guint, gpointer);
 void sig_window_title_changed(VteTerminal *, gpointer);
@@ -466,6 +472,112 @@ sig_key_press(GtkWidget *widget, GdkEvent *event, gpointer data)
     return FALSE;
 }
 
+gboolean
+sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
+{
+    VteTerminal *term = VTE_TERMINAL(widget);
+    char *text;
+
+    (void)data;
+
+    text = vte_terminal_match_check_event(term, (GdkEvent *)event, NULL);
+
+    if (text == NULL)
+        gtk_widget_set_has_tooltip(GTK_WIDGET(term), FALSE);
+    else {
+        // TODO split ip/mask if '/' is present, then add logic around it.
+        char *ip = text;
+
+        struct addrinfo hint, *res = NULL;
+        int ret;
+        memset(&hint, 0, sizeof(hint));
+        hint.ai_family = PF_UNSPEC;
+        hint.ai_flags = AI_NUMERICHOST;
+        ret = getaddrinfo(ip, NULL, &hint, &res);
+        if (ret) {
+            fprintf(stderr, __NAME__": Invalid address '%s'\n", ip);
+            return FALSE;
+        }
+        if (res->ai_family == AF_INET) {
+            // TODO logic: This lookup could be configurable
+            // 1) only the 0th address within CIDR prefix
+            // 2) 0th + 1st
+            // 3) 0th + 1st + last
+            // 4) 0th + 1st + 2nd + 3rd (case dual router VRRP)
+            // 5) 0th + last, etc.
+            // In the interim, just hardcoded 2) for IPv4 and 1) for IPv6 for starters.
+            char ip2[NI_MAXHOST];
+            memset(ip2, 0, NI_MAXHOST);
+
+            socklen_t len;
+            len = sizeof(struct sockaddr_in);
+
+            struct sockaddr_in sa;
+            char hbuf[NI_MAXHOST];
+            memset(&sa, 0, len);
+
+            sa.sin_family = AF_INET;
+            inet_pton(AF_INET, ip, &(sa.sin_addr));
+
+            struct sockaddr_in sa2;
+            char hbuf2[NI_MAXHOST];
+            memset(&sa2, 0, len);
+
+            sa2.sin_family = AF_INET;
+            sa2.sin_addr.s_addr = htonl(ntohl(sa.sin_addr.s_addr) + 1);
+            inet_ntop(AF_INET, &sa2.sin_addr, ip2, sizeof(ip2));
+
+            if (getnameinfo((struct sockaddr *) &sa, len, hbuf, sizeof(hbuf),
+                NULL, 0, NI_NAMEREQD)) {
+                strcpy(hbuf, "NXDOMAIN");
+            }
+
+            if (getnameinfo((struct sockaddr *) &sa2, len, hbuf2, sizeof(hbuf2),
+                NULL, 0, NI_NAMEREQD)) {
+                strcpy(hbuf2, "NXDOMAIN");
+            }
+
+            char * delimiter = " resolves to ";
+            char * newline = "\n";
+
+            char hbufsum[NI_MAXHOST];
+            memset(hbufsum, 0, NI_MAXHOST);
+
+            strcat(hbufsum, ip);
+            strcat(hbufsum, delimiter);
+            strcat(hbufsum, hbuf);
+            strcat(hbufsum, newline);
+            strcat(hbufsum, ip2);
+            strcat(hbufsum, delimiter);
+            strcat(hbufsum, hbuf2);
+            gtk_widget_set_tooltip_text(GTK_WIDGET(term), hbufsum);
+
+        } else if (res->ai_family == AF_INET6) {
+            // TODO logic similar to AF_INET
+            struct sockaddr_in6 sa6;
+            socklen_t len;
+            len = sizeof(struct sockaddr_in6);
+            char hbuf[NI_MAXHOST];
+            memset(&sa6, 0, sizeof(struct sockaddr_in6));
+            sa6.sin6_family = AF_INET6;
+            inet_pton(AF_INET6, ip, &(sa6.sin6_addr));
+            if (getnameinfo((struct sockaddr *) &sa6, len, hbuf, sizeof(hbuf),
+                NULL, 0, NI_NAMEREQD)) {
+                strcpy(hbuf, "NXDOMAIN");
+                //fprintf(stderr, __NAME__": Unable to get PTR record for '%s'\n", ip);
+            }
+            gtk_widget_set_tooltip_text(GTK_WIDGET(term), hbuf);
+
+        } else {
+            gtk_widget_set_has_tooltip(GTK_WIDGET(term), FALSE);
+            printf("%s is an unknown address format %d\n", ip, res->ai_family);
+        }
+        freeaddrinfo(res);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 void
 sig_window_destroy(GtkWidget *widget, gpointer data)
 {
@@ -575,7 +687,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     /* Create GTK+ widgets. */
     t->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(t->win), title);
-    gtk_window_set_wmclass(GTK_WINDOW(t->win), res_name, res_class);
+    //gtk_window_set_wmclass(GTK_WINDOW(t->win), res_name, res_class);
     g_signal_connect(G_OBJECT(t->win), "destroy", G_CALLBACK(sig_window_destroy), t);
 
     /* Wayland only has "app_id", so we need to decide whether we put
@@ -696,10 +808,20 @@ term_new(struct Terminal *t, int argc, char **argv)
                      G_CALLBACK(sig_hyperlink_changed), t);
     g_signal_connect(G_OBJECT(t->term), "key-press-event",
                      G_CALLBACK(sig_key_press), t);
+    g_signal_connect(G_OBJECT(t->term), "motion-notify-event",
+                     G_CALLBACK(sig_motion_notify_event), t);
     g_signal_connect(G_OBJECT(t->term), "resize-window",
                      G_CALLBACK(sig_window_resize), t);
     g_signal_connect(G_OBJECT(t->term), "window-title-changed",
                      G_CALLBACK(sig_window_title_changed), t);
+
+    // TODO get this from config file similar to link_regex
+    char *pattern = "((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([a-f0-9:]+:+)+[a-f0-9]*";
+    vte_terminal_match_add_regex(
+        VTE_TERMINAL(t->term),
+        vte_regex_new_for_match(pattern, strlen(pattern), PCRE2_MULTILINE, NULL),
+        0
+    );
 
     /* Spawn child. */
     if (argv_cmdline != NULL)

@@ -1,4 +1,4 @@
-CFLAGS += -std=c99 -Wall -Wextra -O3
+CFLAGS += -std=c99 -Wall -Wextra -O3 -D_GNU_SOURCE
 __NAME__ = xiate
 __NAME_CAPITALIZED__ = Xiate
 
