@@ -489,14 +489,15 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
         char ip[NI_MAXHOST];
         memset(&ip, 0, NI_MAXHOST);
         int mask = 0;
-        int result = sscanf(cidr, "%[^/]/%d", ip, &mask);
+        sscanf(cidr, "%[^/]/%d", ip, &mask);
         // fprintf(stderr, __NAME__": result '%d'\n", result);
+        // fprintf(stderr, __NAME__": ip '%s'\n", ip);
         // fprintf(stderr, __NAME__": mask '%d'\n", mask);
-        if (result != EOF && mask == 0) {
+        if (mask == 0) {
           fprintf(stderr, __NAME__": could not match to a cidr, testing bare address without mask\n");
           sscanf(cidr, "%[^/]", ip);
         }
-        fprintf(stderr, __NAME__": ip '%s'\n", ip);
+        // fprintf(stderr, __NAME__": ip '%s'\n", ip);
         struct addrinfo hint, *res = NULL;
         int ret;
         memset(&hint, 0, sizeof(hint));
@@ -530,7 +531,7 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
 
             if (getnameinfo((struct sockaddr *) &sa, len, hbuf, sizeof(hbuf),
                 NULL, 0, NI_NAMEREQD)) {
-                strcpy(hbuf, "NXDOMAIN");
+                strcpy(hbuf, "N/A");
             }
 
             memset(hbufsum, 0, NI_MAXHOST);
@@ -549,7 +550,7 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
                 inet_ntop(AF_INET, &sa2.sin_addr, ip2, sizeof(ip2));
                 if (getnameinfo((struct sockaddr *) &sa2, len, hbuf2, sizeof(hbuf2),
                     NULL, 0, NI_NAMEREQD)) {
-                    strcpy(hbuf2, "NXDOMAIN");
+                    strcpy(hbuf2, "N/A");
                 }
                 strcat(hbufsum, newline);
                 strcat(hbufsum, ip2);

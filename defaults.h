@@ -4,7 +4,7 @@ struct ConfigItem config[] = {
     { .s = "Options",  .n = "fonts",              .t = STRINGLIST,  .v.sl = (char *[]){"Monospace 16"},  .l = 1 },
     { .s = "Options",  .n = "scrollback_lines",   .t = INT64,       .v.i = 50000                               },
     { .s = "Options",  .n = "link_regex",         .t = STRING,      .v.s = "[a-z]+://[[:graph:]]+"             },
-    { .s = "Options",  .n = "ipaddr_regex",       .t = STRING,      .v.s = "([0-9]{1,3}\\.){3}[0-9]{1,3}(/[0-9][0-9]?)?" },
+    { .s = "Options",  .n = "ipaddr_regex",       .t = STRING,      .v.s = "((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])(/[0-9][0-9]?)?|([a-f0-9:]+:+)+[a-f0-9]*(/[0-9][0-9]?)?" },
     { .s = "Options",  .n = "link_handler",       .t = STRING,      .v.s = "xiate-link-handler"                },
     { .s = "Options",  .n = "history_handler",    .t = STRING,      .v.s = "xiate-history-handler"             },
     { .s = "Options",  .n = "cursor_blink_mode",  .t = STRING,      .v.s = "VTE_CURSOR_BLINK_OFF"              },
