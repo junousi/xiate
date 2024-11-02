@@ -1,9 +1,10 @@
 struct ConfigItem config[] = {
     { .s = "Options",  .n = "login_shell",        .t = BOOLEAN,     .v.b = TRUE                                },
     { .s = "Options",  .n = "bold_is_bright",     .t = BOOLEAN,     .v.b = FALSE                               },
-    { .s = "Options",  .n = "fonts",              .t = STRINGLIST,  .v.sl = (char *[]){"Monospace 9"},  .l = 1 },
+    { .s = "Options",  .n = "fonts",              .t = STRINGLIST,  .v.sl = (char *[]){"Monospace 16"},  .l = 1 },
     { .s = "Options",  .n = "scrollback_lines",   .t = INT64,       .v.i = 50000                               },
     { .s = "Options",  .n = "link_regex",         .t = STRING,      .v.s = "[a-z]+://[[:graph:]]+"             },
+    { .s = "Options",  .n = "ipaddr_regex",       .t = STRING,      .v.s = "([0-9]{1,3}\\.){3}[0-9]{1,3}(/[0-9][0-9]?)?" },
     { .s = "Options",  .n = "link_handler",       .t = STRING,      .v.s = "xiate-link-handler"                },
     { .s = "Options",  .n = "history_handler",    .t = STRING,      .v.s = "xiate-history-handler"             },
     { .s = "Options",  .n = "cursor_blink_mode",  .t = STRING,      .v.s = "VTE_CURSOR_BLINK_OFF"              },

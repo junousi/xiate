@@ -485,9 +485,18 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
     if (text == NULL)
         gtk_widget_set_has_tooltip(GTK_WIDGET(term), FALSE);
     else {
-        // TODO split ip/mask if '/' is present, then add logic around it.
-        char *ip = text;
-
+        char *cidr = text;
+        char ip[NI_MAXHOST];
+        memset(&ip, 0, NI_MAXHOST);
+        int mask = 0;
+        int result = sscanf(cidr, "%[^/]/%d", ip, &mask);
+        // fprintf(stderr, __NAME__": result '%d'\n", result);
+        // fprintf(stderr, __NAME__": mask '%d'\n", mask);
+        if (result != EOF && mask == 0) {
+          fprintf(stderr, __NAME__": could not match to a cidr, testing bare address without mask\n");
+          sscanf(cidr, "%[^/]", ip);
+        }
+        fprintf(stderr, __NAME__": ip '%s'\n", ip);
         struct addrinfo hint, *res = NULL;
         int ret;
         memset(&hint, 0, sizeof(hint));
@@ -499,61 +508,56 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
             return FALSE;
         }
         if (res->ai_family == AF_INET) {
-            // TODO logic: This lookup could be configurable
-            // 1) only the 0th address within CIDR prefix
-            // 2) 0th + 1st
-            // 3) 0th + 1st + last
-            // 4) 0th + 1st + 2nd + 3rd (case dual router VRRP)
-            // 5) 0th + last, etc.
-            // In the interim, just hardcoded 2) for IPv4 and 1) for IPv6 for starters.
-            char ip2[NI_MAXHOST];
-            memset(ip2, 0, NI_MAXHOST);
+            //TODO would be awesome if this lookup would be configurable.
+            // "just the CIDR 0th"
+            // "CIDR 0th + 1st"
+            // "CIDR 0th + 1st + last"
+            // "CIDR 0th + 1st + 2nd + 3rd"
+            // "CIDR 0th + last"
+            // etc.
 
-            socklen_t len;
-            len = sizeof(struct sockaddr_in);
+            char * delimiter = " resolves to ";
+            char * newline = "\n";
+            char hbuf[NI_MAXHOST];
+            char hbufsum[NI_MAXHOST];
 
             struct sockaddr_in sa;
-            char hbuf[NI_MAXHOST];
-            memset(&sa, 0, len);
-
+            memset(&sa, 0, sizeof(struct sockaddr_in));
+            socklen_t len;
+            len = sizeof(struct sockaddr_in);
             sa.sin_family = AF_INET;
             inet_pton(AF_INET, ip, &(sa.sin_addr));
-
-            struct sockaddr_in sa2;
-            char hbuf2[NI_MAXHOST];
-            memset(&sa2, 0, len);
-
-            sa2.sin_family = AF_INET;
-            sa2.sin_addr.s_addr = htonl(ntohl(sa.sin_addr.s_addr) + 1);
-            inet_ntop(AF_INET, &sa2.sin_addr, ip2, sizeof(ip2));
 
             if (getnameinfo((struct sockaddr *) &sa, len, hbuf, sizeof(hbuf),
                 NULL, 0, NI_NAMEREQD)) {
                 strcpy(hbuf, "NXDOMAIN");
             }
 
-            if (getnameinfo((struct sockaddr *) &sa2, len, hbuf2, sizeof(hbuf2),
-                NULL, 0, NI_NAMEREQD)) {
-                strcpy(hbuf2, "NXDOMAIN");
-            }
-
-            char * delimiter = " resolves to ";
-            char * newline = "\n";
-
-            char hbufsum[NI_MAXHOST];
             memset(hbufsum, 0, NI_MAXHOST);
-
             strcat(hbufsum, ip);
             strcat(hbufsum, delimiter);
             strcat(hbufsum, hbuf);
-            strcat(hbufsum, newline);
-            strcat(hbufsum, ip2);
-            strcat(hbufsum, delimiter);
-            strcat(hbufsum, hbuf2);
-            gtk_widget_set_tooltip_text(GTK_WIDGET(term), hbufsum);
 
+            if (mask != 0) {
+                char ip2[NI_MAXHOST];
+                memset(ip2, 0, NI_MAXHOST);
+                struct sockaddr_in sa2;
+                char hbuf2[NI_MAXHOST];
+                memset(&sa2, 0, sizeof(struct sockaddr_in));
+                sa2.sin_family = AF_INET;
+                sa2.sin_addr.s_addr = htonl(ntohl(sa.sin_addr.s_addr) + 1);
+                inet_ntop(AF_INET, &sa2.sin_addr, ip2, sizeof(ip2));
+                if (getnameinfo((struct sockaddr *) &sa2, len, hbuf2, sizeof(hbuf2),
+                    NULL, 0, NI_NAMEREQD)) {
+                    strcpy(hbuf2, "NXDOMAIN");
+                }
+                strcat(hbufsum, newline);
+                strcat(hbufsum, ip2);
+                strcat(hbufsum, delimiter);
+                strcat(hbufsum, hbuf2);
+            }
+            gtk_widget_set_tooltip_text(GTK_WIDGET(term), hbufsum);
         } else if (res->ai_family == AF_INET6) {
-            // TODO logic similar to AF_INET
             struct sockaddr_in6 sa6;
             socklen_t len;
             len = sizeof(struct sockaddr_in6);
@@ -563,11 +567,12 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
             inet_pton(AF_INET6, ip, &(sa6.sin6_addr));
             if (getnameinfo((struct sockaddr *) &sa6, len, hbuf, sizeof(hbuf),
                 NULL, 0, NI_NAMEREQD)) {
-                strcpy(hbuf, "NXDOMAIN");
-                //fprintf(stderr, __NAME__": Unable to get PTR record for '%s'\n", ip);
+                fprintf(stderr, __NAME__": Unable to get PTR record for '%s'\n",
+                ip);
             }
-            gtk_widget_set_tooltip_text(GTK_WIDGET(term), hbuf);
-
+            else {
+                gtk_widget_set_tooltip_text(GTK_WIDGET(term), hbuf);
+            }
         } else {
             gtk_widget_set_has_tooltip(GTK_WIDGET(term), FALSE);
             printf("%s is an unknown address format %d\n", ip, res->ai_family);
@@ -638,13 +643,14 @@ term_new(struct Terminal *t, int argc, char **argv)
     char **argv_cmdline = NULL, **args_use;
     char *config_file = NULL;
     char *title = __NAME__, *res_class = __NAME_CAPITALIZED__, *res_name = __NAME__;
-    char *app_id, *link_regex;
+    char *app_id, *link_regex, *ipaddr_regex;
     int i;
     GdkRGBA c_foreground_gdk;
     GdkRGBA c_background_gdk;
     GdkRGBA c_palette_gdk[16];
     GdkRGBA c_gdk;
     VteRegex *url_vregex = NULL;
+    VteRegex *ipaddr_vregex = NULL;
     GError *err = NULL;
     GSpawnFlags spawn_flags;
     char *standard16order[] = {
@@ -795,6 +801,15 @@ term_new(struct Terminal *t, int argc, char **argv)
         vte_regex_unref(url_vregex);
     }
 
+    ipaddr_regex = cfg("Options", "ipaddr_regex")->v.s;
+    ipaddr_vregex = vte_regex_new_for_match(ipaddr_regex, strlen(ipaddr_regex),
+                                         PCRE2_MULTILINE | PCRE2_CASELESS, &err);
+    vte_terminal_match_add_regex(
+        VTE_TERMINAL(t->term),
+        ipaddr_vregex,
+        0
+    );
+
     /* Signals. */
     g_signal_connect(G_OBJECT(t->term), "bell",
                      G_CALLBACK(sig_bell), t);
@@ -814,14 +829,6 @@ term_new(struct Terminal *t, int argc, char **argv)
                      G_CALLBACK(sig_window_resize), t);
     g_signal_connect(G_OBJECT(t->term), "window-title-changed",
                      G_CALLBACK(sig_window_title_changed), t);
-
-    // TODO get this from config file similar to link_regex
-    char *pattern = "((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([a-f0-9:]+:+)+[a-f0-9]*";
-    vte_terminal_match_add_regex(
-        VTE_TERMINAL(t->term),
-        vte_regex_new_for_match(pattern, strlen(pattern), PCRE2_MULTILINE, NULL),
-        0
-    );
 
     /* Spawn child. */
     if (argv_cmdline != NULL)
