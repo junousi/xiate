@@ -508,20 +508,15 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
             fprintf(stderr, __NAME__": Invalid address '%s'\n", ip);
             return FALSE;
         }
+
+        char * delimiter = " resolves to ";
+        char * newline = "\n";
+        char hbuf[NI_MAXHOST];
+        char hbufsum[NI_MAXHOST];
+        memset(hbuf, 0, NI_MAXHOST);
+        memset(hbufsum, 0, NI_MAXHOST);
+
         if (res->ai_family == AF_INET) {
-            //TODO would be awesome if this lookup would be configurable.
-            // "just the CIDR 0th"
-            // "CIDR 0th + 1st"
-            // "CIDR 0th + 1st + last"
-            // "CIDR 0th + 1st + 2nd + 3rd"
-            // "CIDR 0th + last"
-            // etc.
-
-            char * delimiter = " resolves to ";
-            char * newline = "\n";
-            char hbuf[NI_MAXHOST];
-            char hbufsum[NI_MAXHOST];
-
             struct sockaddr_in sa;
             memset(&sa, 0, sizeof(struct sockaddr_in));
             socklen_t len;
@@ -534,12 +529,18 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
                 strcpy(hbuf, "N/A");
             }
 
-            memset(hbufsum, 0, NI_MAXHOST);
             strcat(hbufsum, ip);
             strcat(hbufsum, delimiter);
             strcat(hbufsum, hbuf);
 
-            if (mask != 0) {
+            //TODO would be awesome if this lookup would be configurable.
+            // "just the CIDR 0th"
+            // "CIDR 0th + 1st"
+            // "CIDR 0th + 1st + last"
+            // "CIDR 0th + 1st + 2nd + 3rd"
+            // "CIDR 0th + last"
+            // etc.
+            if ((mask != 0) && (mask != 32)) {
                 char ip2[NI_MAXHOST];
                 memset(ip2, 0, NI_MAXHOST);
                 struct sockaddr_in sa2;
@@ -560,20 +561,43 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
             gtk_widget_set_tooltip_text(GTK_WIDGET(term), hbufsum);
         } else if (res->ai_family == AF_INET6) {
             struct sockaddr_in6 sa6;
+            memset(&sa6, 0, sizeof(struct sockaddr_in6));
             socklen_t len;
             len = sizeof(struct sockaddr_in6);
-            char hbuf[NI_MAXHOST];
-            memset(&sa6, 0, sizeof(struct sockaddr_in6));
             sa6.sin6_family = AF_INET6;
             inet_pton(AF_INET6, ip, &(sa6.sin6_addr));
+
             if (getnameinfo((struct sockaddr *) &sa6, len, hbuf, sizeof(hbuf),
                 NULL, 0, NI_NAMEREQD)) {
+                strcpy(hbuf, "N/A");
                 fprintf(stderr, __NAME__": Unable to get PTR record for '%s'\n",
                 ip);
             }
-            else {
-                gtk_widget_set_tooltip_text(GTK_WIDGET(term), hbuf);
+
+            strcat(hbufsum, ip);
+            strcat(hbufsum, delimiter);
+            strcat(hbufsum, hbuf);
+
+            if ((mask != 0) && (mask != 128)) {
+                char ip2[NI_MAXHOST];
+                memset(ip2, 0, NI_MAXHOST);
+                struct sockaddr_in6 sa6_2;
+                char hbuf2[NI_MAXHOST];
+                memset(&sa6_2, 0, sizeof(struct sockaddr_in6));
+                sa6_2.sin6_family = AF_INET6;
+                // TODO address manipulation, for now just a mock-up
+                inet_pton(AF_INET6, ip, &(sa6_2.sin6_addr));
+                if (getnameinfo((struct sockaddr *) &sa6_2, len, hbuf2, sizeof(hbuf2),
+                    NULL, 0, NI_NAMEREQD)) {
+                    strcpy(hbuf2, "N/A");
+                }
+                strcat(hbufsum, newline);
+                strcat(hbufsum, ip);
+                strcat(hbufsum, delimiter);
+                strcat(hbufsum, hbuf2);
             }
+
+            gtk_widget_set_tooltip_text(GTK_WIDGET(term), hbufsum);
         } else {
             gtk_widget_set_has_tooltip(GTK_WIDGET(term), FALSE);
             printf("%s is an unknown address format %d\n", ip, res->ai_family);
@@ -694,6 +718,7 @@ term_new(struct Terminal *t, int argc, char **argv)
     /* Create GTK+ widgets. */
     t->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(t->win), title);
+    /* terminal.c:697:5: warning: ‘gtk_window_set_wmclass’ is deprecated [-Wdeprecated-declarations] */
     //gtk_window_set_wmclass(GTK_WINDOW(t->win), res_name, res_class);
     g_signal_connect(G_OBJECT(t->win), "destroy", G_CALLBACK(sig_window_destroy), t);
 
