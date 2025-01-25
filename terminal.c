@@ -490,14 +490,10 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
         memset(&ip, 0, NI_MAXHOST);
         int mask = 0;
         sscanf(cidr, "%[^/]/%d", ip, &mask);
-        // fprintf(stderr, __NAME__": result '%d'\n", result);
-        // fprintf(stderr, __NAME__": ip '%s'\n", ip);
-        // fprintf(stderr, __NAME__": mask '%d'\n", mask);
         if (mask == 0) {
           fprintf(stderr, __NAME__": could not match to a cidr, testing bare address without mask\n");
           sscanf(cidr, "%[^/]", ip);
         }
-        // fprintf(stderr, __NAME__": ip '%s'\n", ip);
         struct addrinfo hint, *res = NULL;
         int ret;
         memset(&hint, 0, sizeof(hint));
@@ -533,13 +529,13 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
             strcat(hbufsum, delimiter);
             strcat(hbufsum, hbuf);
 
-            //TODO would be awesome if this lookup would be configurable.
-            // "just the CIDR 0th"
-            // "CIDR 0th + 1st"
-            // "CIDR 0th + 1st + last"
-            // "CIDR 0th + 1st + 2nd + 3rd"
-            // "CIDR 0th + last"
-            // etc.
+            /* TODO would be awesome if this lookup would be configurable:
+             * "Only the CIDR 0th"
+             * "CIDR 0th + 1st"
+             * "CIDR 0th + 1st + last"
+             * "CIDR 0th + 1st + 2nd + 3rd"
+             * "CIDR 0th + last"
+             * etc. */
             if ((mask != 0) && (mask != 32)) {
                 char ip2[NI_MAXHOST];
                 memset(ip2, 0, NI_MAXHOST);
@@ -585,14 +581,19 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
                 char hbuf2[NI_MAXHOST];
                 memset(&sa6_2, 0, sizeof(struct sockaddr_in6));
                 sa6_2.sin6_family = AF_INET6;
-                // TODO address manipulation, for now just a mock-up
                 inet_pton(AF_INET6, ip, &(sa6_2.sin6_addr));
+                /* TODO proper address manipulation; for now just handle the
+                 * case of incrementing last octet when trivially possible. */
+                if (sa6_2.sin6_addr.s6_addr[15]-255 != 0) {
+                    sa6_2.sin6_addr.s6_addr[15]++;
+                }
                 if (getnameinfo((struct sockaddr *) &sa6_2, len, hbuf2, sizeof(hbuf2),
                     NULL, 0, NI_NAMEREQD)) {
                     strcpy(hbuf2, "N/A");
                 }
+                inet_ntop(AF_INET6, &sa6_2.sin6_addr, ip2, sizeof(ip2));
                 strcat(hbufsum, newline);
-                strcat(hbufsum, ip);
+                strcat(hbufsum, ip2);
                 strcat(hbufsum, delimiter);
                 strcat(hbufsum, hbuf2);
             }
@@ -718,7 +719,8 @@ term_new(struct Terminal *t, int argc, char **argv)
     /* Create GTK+ widgets. */
     t->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(t->win), title);
-    /* terminal.c:697:5: warning: ‘gtk_window_set_wmclass’ is deprecated [-Wdeprecated-declarations] */
+    /* TODO Uncomment this whenever the cause of the warning has been fixed
+       terminal.c:697:5: warning: ‘gtk_window_set_wmclass’ is deprecated [-Wdeprecated-declarations] */
     //gtk_window_set_wmclass(GTK_WINDOW(t->win), res_name, res_class);
     g_signal_connect(G_OBJECT(t->win), "destroy", G_CALLBACK(sig_window_destroy), t);
 
