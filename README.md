@@ -1,3 +1,14 @@
+This is a fork
+--------------
+
+The main purpose of this fork is to visualize IP address PTR data in a
+mouseover tooltip overlay:
+
+![Example](ptr_example.png)
+
+xiate
+-----
+
 ```
         _       _
   __  _(_) __ _| |_ ___
@@ -56,11 +67,3 @@ There are some more command line arguments. Please refer to the manpage.
 
 xiate reads "$XDG_CONFIG_HOME/xiate/config.ini" on startup. Please
 consult "config.example.ini" to find out which options you can set.
-
-This is a fork
---------------
-
-The main purpose of this fork is to visualize IP address PTR data in a
-mouseover tooltip overlay:
-
-![Example](ptr_example.png)
