@@ -13,8 +13,10 @@
 #include <stdlib.h>
 #include <netdb.h>
 #include <sys/socket.h>
-#include <errno.h>
 #include <arpa/inet.h>
+
+#define MATCH_TAG_URL 0
+#define MATCH_TAG_IPADDR 1
 
 enum ConfigItemType {
     STRING,
@@ -49,6 +51,7 @@ struct Terminal
     gboolean has_child_exit_status;
     gint child_exit_status;
     size_t current_font;
+    char *ptr_last_match;
 };
 
 
@@ -476,24 +479,39 @@ gboolean
 sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
 {
     VteTerminal *term = VTE_TERMINAL(widget);
+    struct Terminal *t = (struct Terminal *)data;
     char *text;
+    int tag = -1;
 
-    (void)data;
+    text = vte_terminal_match_check_event(term, (GdkEvent *)event, &tag);
 
-    text = vte_terminal_match_check_event(term, (GdkEvent *)event, NULL);
-
-    if (text == NULL)
+    if (text == NULL || tag != MATCH_TAG_IPADDR) {
         gtk_widget_set_has_tooltip(GTK_WIDGET(term), FALSE);
-    else {
+        g_free(t->ptr_last_match);
+        t->ptr_last_match = NULL;
+        g_free(text);
+        return FALSE;
+    }
+
+    if (g_strcmp0(text, t->ptr_last_match) == 0) {
+        /* Still hovering the same match as last time; the tooltip is
+         * already showing the right thing, don't redo the DNS lookups. */
+        g_free(text);
+        return TRUE;
+    }
+    g_free(t->ptr_last_match);
+    t->ptr_last_match = text;
+
+    {
         char *cidr = text;
         char ip[NI_MAXHOST];
         memset(&ip, 0, NI_MAXHOST);
         int mask = 0;
-        sscanf(cidr, "%[^/]/%d", ip, &mask);
-        if (mask == 0) {
-          fprintf(stderr, __NAME__": could not match to a cidr, testing bare address without mask\n");
-          sscanf(cidr, "%[^/]", ip);
-        }
+        gboolean has_mask = (strchr(cidr, '/') != NULL);
+        if (has_mask)
+            sscanf(cidr, "%1024[^/]/%d", ip, &mask);
+        else
+            sscanf(cidr, "%1024[^/]", ip);
         struct addrinfo hint, *res = NULL;
         int ret;
         memset(&hint, 0, sizeof(hint));
@@ -504,6 +522,11 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
             fprintf(stderr, __NAME__": Invalid address '%s'\n", ip);
             return FALSE;
         }
+
+        if (has_mask && (res->ai_family == AF_INET) && (mask < 0 || mask > 32))
+            has_mask = FALSE;
+        if (has_mask && (res->ai_family == AF_INET6) && (mask < 0 || mask > 128))
+            has_mask = FALSE;
 
         char * delimiter = " resolves to ";
         char * newline = "\n";
@@ -525,9 +548,9 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
                 strcpy(hbuf, "N/A");
             }
 
-            strcat(hbufsum, ip);
-            strcat(hbufsum, delimiter);
-            strcat(hbufsum, hbuf);
+            g_strlcat(hbufsum, ip, sizeof(hbufsum));
+            g_strlcat(hbufsum, delimiter, sizeof(hbufsum));
+            g_strlcat(hbufsum, hbuf, sizeof(hbufsum));
 
             /* TODO would be awesome if this lookup would be configurable:
              * "Only the CIDR 0th"
@@ -536,7 +559,7 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
              * "CIDR 0th + 1st + 2nd + 3rd"
              * "CIDR 0th + last"
              * etc. */
-            if ((mask != 0) && (mask != 32)) {
+            if (has_mask && (mask != 32)) {
                 char ip2[NI_MAXHOST];
                 memset(ip2, 0, NI_MAXHOST);
                 struct sockaddr_in sa2;
@@ -549,10 +572,10 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
                     NULL, 0, NI_NAMEREQD)) {
                     strcpy(hbuf2, "N/A");
                 }
-                strcat(hbufsum, newline);
-                strcat(hbufsum, ip2);
-                strcat(hbufsum, delimiter);
-                strcat(hbufsum, hbuf2);
+                g_strlcat(hbufsum, newline, sizeof(hbufsum));
+                g_strlcat(hbufsum, ip2, sizeof(hbufsum));
+                g_strlcat(hbufsum, delimiter, sizeof(hbufsum));
+                g_strlcat(hbufsum, hbuf2, sizeof(hbufsum));
             }
             gtk_widget_set_tooltip_text(GTK_WIDGET(term), hbufsum);
         } else if (res->ai_family == AF_INET6) {
@@ -570,11 +593,11 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
                 ip);
             }
 
-            strcat(hbufsum, ip);
-            strcat(hbufsum, delimiter);
-            strcat(hbufsum, hbuf);
+            g_strlcat(hbufsum, ip, sizeof(hbufsum));
+            g_strlcat(hbufsum, delimiter, sizeof(hbufsum));
+            g_strlcat(hbufsum, hbuf, sizeof(hbufsum));
 
-            if ((mask != 0) && (mask != 128)) {
+            if (has_mask && (mask != 128)) {
                 char ip2[NI_MAXHOST];
                 memset(ip2, 0, NI_MAXHOST);
                 struct sockaddr_in6 sa6_2;
@@ -583,30 +606,36 @@ sig_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
                 sa6_2.sin6_family = AF_INET6;
                 inet_pton(AF_INET6, ip, &(sa6_2.sin6_addr));
                 /* TODO proper address manipulation; for now just handle the
-                 * case of incrementing last octet when trivially possible. */
-                if (sa6_2.sin6_addr.s6_addr[15]-255 != 0) {
-                    sa6_2.sin6_addr.s6_addr[15]++;
+                 * case of incrementing by one, with carry. */
+                {
+                    int i;
+                    for (i = 15; i >= 0; i--) {
+                        if (sa6_2.sin6_addr.s6_addr[i] != 255) {
+                            sa6_2.sin6_addr.s6_addr[i]++;
+                            break;
+                        }
+                        sa6_2.sin6_addr.s6_addr[i] = 0;
+                    }
                 }
                 if (getnameinfo((struct sockaddr *) &sa6_2, len, hbuf2, sizeof(hbuf2),
                     NULL, 0, NI_NAMEREQD)) {
                     strcpy(hbuf2, "N/A");
                 }
                 inet_ntop(AF_INET6, &sa6_2.sin6_addr, ip2, sizeof(ip2));
-                strcat(hbufsum, newline);
-                strcat(hbufsum, ip2);
-                strcat(hbufsum, delimiter);
-                strcat(hbufsum, hbuf2);
+                g_strlcat(hbufsum, newline, sizeof(hbufsum));
+                g_strlcat(hbufsum, ip2, sizeof(hbufsum));
+                g_strlcat(hbufsum, delimiter, sizeof(hbufsum));
+                g_strlcat(hbufsum, hbuf2, sizeof(hbufsum));
             }
 
             gtk_widget_set_tooltip_text(GTK_WIDGET(term), hbufsum);
         } else {
             gtk_widget_set_has_tooltip(GTK_WIDGET(term), FALSE);
-            printf("%s is an unknown address format %d\n", ip, res->ai_family);
+            fprintf(stderr, __NAME__": %s is an unknown address format %d\n", ip, res->ai_family);
         }
         freeaddrinfo(res);
         return TRUE;
     }
-    return FALSE;
 }
 
 void
@@ -825,18 +854,23 @@ term_new(struct Terminal *t, int argc, char **argv)
     }
     else
     {
-        vte_terminal_match_add_regex(VTE_TERMINAL(t->term), url_vregex, 0);
+        vte_terminal_match_add_regex(VTE_TERMINAL(t->term), url_vregex, MATCH_TAG_URL);
         vte_regex_unref(url_vregex);
     }
 
     ipaddr_regex = cfg("Options", "ipaddr_regex")->v.s;
     ipaddr_vregex = vte_regex_new_for_match(ipaddr_regex, strlen(ipaddr_regex),
                                          PCRE2_MULTILINE | PCRE2_CASELESS, &err);
-    vte_terminal_match_add_regex(
-        VTE_TERMINAL(t->term),
-        ipaddr_vregex,
-        0
-    );
+    if (ipaddr_vregex == NULL)
+    {
+        fprintf(stderr, __NAME__": ipaddr_regex: %s\n", safe_emsg(err));
+        g_clear_error(&err);
+    }
+    else
+    {
+        vte_terminal_match_add_regex(VTE_TERMINAL(t->term), ipaddr_vregex, MATCH_TAG_IPADDR);
+        vte_regex_unref(ipaddr_vregex);
+    }
 
     /* Signals. */
     g_signal_connect(G_OBJECT(t->term), "bell",
